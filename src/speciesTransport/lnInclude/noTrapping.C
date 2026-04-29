@@ -1,1 +1,0 @@
-../trappingModel/noTrapping/noTrapping.C

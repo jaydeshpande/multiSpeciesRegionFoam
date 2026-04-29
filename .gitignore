@@ -1,16 +1,26 @@
-platforms/
-lnInclude/
-**/Make/
-*.dep
+# --- AI & IDE ---
 .claude/
+.vscode/
+.idea/
 
-#ignore all time directories except 0 #
+# --- OpenFOAM Build Artifacts ---
+# Ignores the symbolic links and architecture-specific binaries
+**/lnInclude/
+**/Make/linux*
+**/Make/platforms/
+**/Make/*.dep
 
+# --- OpenFOAM Mesh (Tutorials) ---
+# Ignores polyMesh in the root constant folder and all sub-region folders
+**/constant/polyMesh/
+**/constant/*/polyMesh/
+
+# --- Simulation Results & Logs ---
+# Ignores numeric result directories (e.g., 0.5, 10, 100) 
+# but preserves the '0' directory (Initial Conditions)
 [1-9]*
+[0-9]*.[0-9]*
 
-#ignore openfoam directories generated during runs#
-polyMesh/
-processor*/
-*.foam
+# Ignore log files from solvers and utilities
 log.*
-
+*.log

@@ -1,1 +1,0 @@
-../trappingModel/McNabbFoster/McNabbFoster.H
