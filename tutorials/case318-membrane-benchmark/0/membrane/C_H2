@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case318-membrane-benchmark / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hattab et al. 2024, Section 3.3.1
+// C(x=0, t) = C₁ = 0.83 mol/m³  (high-pressure side, constant)
+// C(x=L, t) = 0                  (low-pressure side, constant)
+// C(x, 0)   = 0                  (membrane initially empty)
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 0.83;
+    }
+
+    outlet
+    {
+        type            fixedValue;
+        value           uniform 0;
+    }
+
+    sides
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

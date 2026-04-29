@@ -1,0 +1,59 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case318-membrane-benchmark
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hattab et al. 2024, Section 3.3.1 — Benchmark: diffusion in a 1.2 mm membrane
+// with constant BCs, against the Pasler et al. OpenFOAM code and the analytical
+// Fourier sine series solution.
+//
+// τ_SS = L²/D = (1.2e-3)²/1.119018e-8 ≈ 128.7 s
+// Running to t=30 s covers the early-to-mid transient (0 to 0.23 τ_SS).
+// At t=30 s the diffusion front (2√(Dt) ≈ 1.16 mm) is approaching the far wall,
+// making this a sensitive test of the solver's accuracy.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    membrane    speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         30;
+
+deltaT          5e-3;
+
+writeControl    adjustableRunTime;
+writeInterval   1;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  10;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

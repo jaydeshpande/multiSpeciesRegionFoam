@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case318-membrane-benchmark / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Metal membrane (proxy for a hydrogen-permeable metal, e.g. Fe or Pd-alloy).
+// T = 300 K, isothermal throughout — thermal properties are placeholders since
+// no heat equation is needed; Ea = 0 keeps D constant at its reference value.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       2;       // H2 molecular weight [g/mol]
+    }
+    transport
+    {
+        kappa           50;      // W/(m·K) — typical metal, T is fixed so irrelevant
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              500;     // J/(kg·K)
+    }
+    equationOfState
+    {
+        rho             7900;    // kg/m³ — Fe-like density, irrelevant for species eqn
+    }
+}
+
+// ************************************************************************* //

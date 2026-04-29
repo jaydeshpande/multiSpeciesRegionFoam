@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case318-membrane-benchmark / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: H2 (hydrogen / tritium proxy)
+// Source:  Hattab et al. 2024, Fusion Eng. Des. 202, 114362, Section 3.3.1
+//
+// D = 1.119018e-8 m²/s  (isothermal constant diffusivity at T = 300 K)
+// Ea = 0 → D does not depend on temperature; T field is a dummy.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1.119018e-8;
+    Ea          0;
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

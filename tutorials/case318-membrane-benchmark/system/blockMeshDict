@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case318-membrane-benchmark
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// 1.2 mm membrane, 90 cells in x — matches the mesh from Hattab et al. 2024
+// Section 3.3.1 and the Pasler et al. reference case.
+//
+// Species: H2 (representing hydrogen/tritium in a metal membrane)
+// D = 1.119018e-8 m²/s, C_left = 0.83 mol/m³, C_right ≈ 0, T = 300 K
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    (0     0   0)   // 0
+    (1.2   0   0)   // 1
+    (1.2   1   0)   // 2
+    (0     1   0)   // 3
+    (0     0   1)   // 4
+    (1.2   0   1)   // 5
+    (1.2   1   1)   // 6
+    (0     1   1)   // 7
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) membrane (90 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    inlet
+    {
+        type    patch;
+        faces   ( (0 4 7 3) );
+    }
+    outlet
+    {
+        type    patch;
+        faces   ( (1 2 6 5) );
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 5 4)
+            (3 7 6 2)
+            (0 3 2 1)
+            (4 5 6 7)
+        );
+    }
+);
+
+// ************************************************************************* //

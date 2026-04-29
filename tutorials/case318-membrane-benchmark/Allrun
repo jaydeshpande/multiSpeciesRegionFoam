@@ -1,0 +1,26 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.3.1 — Membrane diffusion benchmark
+# Hattab et al. 2024, Fusion Eng. Des. 202, 114362, Section 3.3.1
+#
+# Validates: 1-D diffusion of H2 through a 1.2 mm metal membrane with constant
+# BCs against the Fourier sine series analytical solution and the Pasler et al.
+# OpenFOAM reference code.
+# Solver:    foamMultiRun (single solid region, speciesSolid)
+# Runtime:   ~1 minute on a single core
+
+runApplication blockMesh
+
+# blockMesh writes the mesh to constant/polyMesh.
+# foamMultiRun expects it under constant/membrane/polyMesh.
+mkdir -p constant/membrane
+mv constant/polyMesh constant/membrane/polyMesh
+
+runApplication foamMultiRun
+
+echo
+echo "==> Compare with analytical (Fourier sine series):"
+echo "    python3 validation/membrane_benchmark.py"
+echo
