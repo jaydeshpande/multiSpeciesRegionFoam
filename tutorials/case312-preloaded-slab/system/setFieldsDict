@@ -1,0 +1,35 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case312-preloaded-slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      setFieldsDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Preloaded region: C_T2 = 1 mol/m³ for x ∈ [0, h] = [0, 0.01 m].
+// The remainder of the slab (x ∈ [h, L]) starts at 0.
+
+defaultFieldValues
+(
+    volScalarFieldValue C_T2 0
+);
+
+regions
+(
+    boxToCell
+    {
+        // x ∈ [0, 0.01 m], y/z extend beyond mesh faces to catch all cells.
+        box (0 -1e-3 -1e-3) (0.01 2e-3 2e-3);
+        fieldValues
+        (
+            volScalarFieldValue C_T2 1
+        );
+    }
+);
+
+// ************************************************************************* //

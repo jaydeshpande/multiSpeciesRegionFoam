@@ -1,0 +1,9 @@
+arrheniusProperty/arrheniusProperty.C
+
+trappingModel/trappingModel/trappingModel.C
+trappingModel/noTrapping/noTrapping.C
+trappingModel/McNabbFoster/McNabbFoster.C
+
+speciesModel/speciesModel.C
+
+LIB = $(FOAM_USER_LIBBIN)/libspeciesTransport

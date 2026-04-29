@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case311-slab-diffusion
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/slab";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Thermal PROXY for species diffusion.
+// The heat equation rho*Cv*dT/dt = laplacian(kappa, T) is used with
+//   rho = 1 kg/m³, Cv = 1 J/(kg·K), kappa = D_species = 1e-8 m²/s (= W/(m·K))
+// This gives dT/dt = D * laplacian(T), identical to the diffusion equation.
+// T [K] maps to C [mol/m³] with T_in = 1 → C_in = 1 mol/m³.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       1;    // not used for diffusion physics
+    }
+    transport
+    {
+        kappa           1e-8; // = D_species [W/(m·K)] ≡ [m²/s] here
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1;    // = 1 J/(kg·K) so rho*Cv = 1 kg/(m³·K)
+    }
+    equationOfState
+    {
+        rho             1;    // = 1 kg/m³
+    }
+}
+
+// ************************************************************************* //

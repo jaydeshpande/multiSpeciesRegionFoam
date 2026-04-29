@@ -1,0 +1,48 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case316-membrane-distillation-thermal / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      C_H2O;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Water vapour concentration [mol/m³].
+// Fixed at saturation values corresponding to each face temperature:
+//   hot_face:  C = p_sat(60°C)/(R·333K) ≈ 7.0 mol/m³
+//   cold_face: C = p_sat(20°C)/(R·293K) ≈ 1.0 mol/m³
+//
+// Because D_eff(T) is higher on the hot side, the steady-state profile curves
+// toward the cold face.  The analytical solution is computed numerically in
+// validation/md_thermal_compare.py.
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    hot_face
+    {
+        type        fixedValue;
+        value       uniform 7.0;    // mol/m³
+    }
+
+    cold_face
+    {
+        type        fixedValue;
+        value       uniform 1.0;    // mol/m³
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /Users/jaydeep/OpenFOAM-13-master/multiSpeciesRegionFoam/tutorials/case315-membrane-distillation/Allrun /Users/jaydeep/OpenFOAM-13-master/multiSpeciesRegionFoam/tutorials/case315-membrane-distillation/Allclean)",
+      "Bash(chmod +x /Users/jaydeep/OpenFOAM-13-master/multiSpeciesRegionFoam/tutorials/case316-membrane-distillation-thermal/Allrun /Users/jaydeep/OpenFOAM-13-master/multiSpeciesRegionFoam/tutorials/case316-membrane-distillation-thermal/Allclean)",
+      "Bash(chmod +x /Users/jaydeep/OpenFOAM-13-master/multiSpeciesRegionFoam/tutorials/case317-reverse-osmosis/Allrun /Users/jaydeep/OpenFOAM-13-master/multiSpeciesRegionFoam/tutorials/case317-reverse-osmosis/Allclean)"
+    ]
+  }
+}

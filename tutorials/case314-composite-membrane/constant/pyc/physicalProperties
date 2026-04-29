@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/pyc";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// PyC (pyrolytic carbon) thermal properties.
+// These drive the T field (thermal solve in solid module).
+// Species diffusion is handled separately by speciesSolid via speciesProperties.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       12;    // carbon
+    }
+    transport
+    {
+        kappa           5.0;   // W/(m·K) — PyC through-plane conductivity
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              710;   // J/(kg·K)
+    }
+    equationOfState
+    {
+        rho             2200;  // kg/m³
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,29 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.1.6 — Thermally coupled membrane distillation
+# multiSpeciesRegionFoam tutorial series
+#
+# A linear temperature gradient (333 K → 293 K) is solved by the solid thermal
+# equation.  The temperature field drives the Arrhenius diffusivity D_eff(T),
+# producing a curved (non-linear) steady-state water-vapour concentration profile.
+#
+# Validation:
+#   - T_ss(x) = linear (333 − 40 000·x  K)
+#   - C_ss(x) computed by numerical quadrature of J = const / ∫dx/D(T(x))
+#
+# Solver:  foamMultiRun (single region "membrane", speciesSolid)
+# Runtime: ~1 minute on a single core
+
+runApplication blockMesh
+
+mkdir -p constant/membrane
+mv constant/polyMesh constant/membrane/polyMesh
+
+runApplication foamMultiRun
+
+echo
+echo "==> Compare with analytical (variable-D steady-state profile):"
+echo "    python3 validation/md_thermal_compare.py"
+echo

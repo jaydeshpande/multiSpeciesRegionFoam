@@ -1,0 +1,47 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case316-membrane-distillation-thermal / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: water vapour (H2O)
+// Validates: temperature-dependent D_eff produces a curved steady-state
+// concentration profile (compare with the linear profile of case 3.1.5).
+//
+// D_eff(T) = D0 · exp(−Ea / (R · T))
+//
+//   D0   = 4.67e-6 m²/s   chosen so D_eff(313 K) = 1e-7 m²/s
+//   Ea   = 10 000 J/mol   (representative Arrhenius slope for vapour-in-pore
+//                           diffusion; gives ~65 % variation over 293–333 K)
+//
+//   D_eff(333 K) = 4.67e-6 · exp(−10000/(8.314×333)) ≈ 1.27e-7 m²/s
+//   D_eff(293 K) = 4.67e-6 · exp(−10000/(8.314×293)) ≈ 7.70e-8 m²/s
+//
+// Boundary concentrations (fixed, from saturation vapour pressure):
+//   C_hot  = p_sat(60°C)/(R·333K) ≈ 7.0 mol/m³
+//   C_cold = p_sat(20°C)/(R·293K) ≈ 1.0 mol/m³
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 4.67e-6;   // m²/s
+    Ea          10000;                         // J/mol
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

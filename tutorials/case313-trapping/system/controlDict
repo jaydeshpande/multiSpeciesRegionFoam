@@ -1,0 +1,62 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case313-trapping
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hattab et al. 2024, Section 3.1.3
+// Permeation through a slab with McNabb-Foster trapping (single trap site).
+//
+// Sub-case (a) — WEAK TRAPPING (ε = 0.09 eV, default):
+//   D_eff = D / (1 + ft*αt/αd) ≈ 1 / 29.4 m²/s
+//   Breakthrough time τ_bc = L²/(2π²*D_eff) ≈ 1.5 s
+//   Run to t = 20 s (13× τ_bc) to reach steady state.
+//
+// Sub-case (b) — STRONG TRAPPING (ε = 1.5 eV):
+//   Change epsilon in constant/slab/speciesProperties to 1.5, set endTime 3000.
+//   Breakthrough time τ_bd = ft*N*L²/(2*C_in*D) = 500 s.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    slab        speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         20;
+
+deltaT          0.1;
+
+writeControl    adjustableRunTime;
+writeInterval   2;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

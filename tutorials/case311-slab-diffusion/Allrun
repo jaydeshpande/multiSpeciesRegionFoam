@@ -1,0 +1,25 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.1.1 — Single-slab diffusion (thermal proxy for species)
+# Hattab et al. 2024, Section 3.1.1
+#
+# Validates: pure 1D diffusion against erfc analytical solution.
+# Solver:    foamMultiRun (single solid region)
+# Runtime:   ~1 minute on a single core
+
+runApplication blockMesh
+
+# blockMesh writes to constant/polyMesh (default).
+# foamMultiRun expects the mesh in constant/<regionName>/polyMesh.
+# For a single-region case splitMeshRegions does nothing, so move manually.
+mkdir -p constant/slab
+mv constant/polyMesh constant/slab/polyMesh
+
+runApplication foamMultiRun
+
+echo
+echo "==> Run complete.  Compare with analytical:"
+echo "    python3 validation/erfc_compare.py"
+echo

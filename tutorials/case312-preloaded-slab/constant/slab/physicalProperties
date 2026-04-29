@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case312-preloaded-slab / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/slab";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Neutral solid carrier: properties chosen so the temperature field T stays
+// constant at 500 K (no heat sources, zeroGradient BCs).
+// Species diffusion (D = 1e-6 m²/s) is handled by speciesProperties and is
+// independent of thermal properties since Ea = 0.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       1;
+    }
+    transport
+    {
+        kappa           1;    // W/(m·K) — thermal conductivity (irrelevant, T=const)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1;    // J/(kg·K)
+    }
+    equationOfState
+    {
+        rho             1;    // kg/m³
+    }
+}
+
+// ************************************************************************* //

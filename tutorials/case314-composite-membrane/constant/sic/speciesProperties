@@ -1,0 +1,38 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case314-composite-membrane / sic
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/sic";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+species     C_T2;  // must match the field file name in 0/sic/
+
+// Diffusivity: same as PyC for this symmetric test
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;
+    Ea          0;
+}
+
+// Solubility: half that of PyC → partition ratio = 2
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;   // mol/m³
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

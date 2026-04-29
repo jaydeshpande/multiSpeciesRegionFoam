@@ -1,0 +1,45 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case317-reverse-osmosis / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dense polyamide membrane: water diffusion by solution-diffusion mechanism.
+// D_m = 1e-9 m²/s — water diffusivity in dense polyamide (realistic: ~1e-12,
+// scaled 1000× here so τ_SS = L²/D = (5e-4)²/1e-9 = 250 s is tractable).
+// Ks_m = 1000 mol/m³ — Henry constant for water in the membrane polymer.
+//
+// Henry partition at feed/membrane interface:
+//   K_H = Ks_m / Ks_feed = 1000/2000 = 0.5
+//   C_m,face = K_H · C_f,face   → concentration drop from feed into polymer
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;   // m²/s  (scaled for run-time tractability)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;   // mol/m³  — polymer solubility
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

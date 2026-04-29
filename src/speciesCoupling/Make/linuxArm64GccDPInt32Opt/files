@@ -1,0 +1,4 @@
+SOURCE += speciesCoupledMixedFvPatchScalarField/speciesCoupledMixedFvPatchScalarField.C
+SOURCE += sievertsCoupledMixedFvPatchScalarField/sievertsCoupledMixedFvPatchScalarField.C
+
+LIB = $(FOAM_USER_LIBBIN)/libspeciesCoupling

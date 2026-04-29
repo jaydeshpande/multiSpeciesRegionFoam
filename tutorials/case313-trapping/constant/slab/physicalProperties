@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case313-trapping / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/slab";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Neutral solid carrier at 1000 K.
+// Thermal properties chosen to keep T constant at 1000 K (no sources).
+// Species diffusion (D = 1 m²/s) is handled by speciesProperties.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       1;
+    }
+    transport
+    {
+        kappa           1;    // W/(m·K)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1;    // J/(kg·K)
+    }
+    equationOfState
+    {
+        rho             1;    // kg/m³
+    }
+}
+
+// ************************************************************************* //

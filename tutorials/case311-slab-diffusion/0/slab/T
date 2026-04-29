@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case311-slab-diffusion
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/slab";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// T is the thermal proxy for species concentration C, shifted by T_ref = 300 K:
+//   C [mol/m³] = T [K] - 300
+//
+// T_ref = 300 K avoids T <= 0 which crashes heSolidThermo/eConst (OF-13).
+// The diffusion equation is linear so C = T - 300 exactly satisfies:
+//   dC/dt = D * laplacian(C)  with C_in = 1, C_out = 0, C(x,0) = 0.
+//
+//   T_inlet  = 301 K  → C = 1 mol/m³
+//   T_outlet = 300 K  → C = 0 mol/m³
+//   T_init   = 300 K  → C = 0 mol/m³ (empty slab)
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 300;
+
+boundaryField
+{
+    inlet
+    {
+        type        fixedValue;
+        value       uniform 301;  // C_in = 1 mol/m³ → T = 300 + 1
+    }
+
+    outlet
+    {
+        type        fixedValue;
+        value       uniform 300;  // C_out = 0 mol/m³ → T = 300 + 0
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case311-slab-diffusion
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hattab et al. 2024, Section 3.1.1
+// Single-region thermal proxy for species diffusion.
+// D_eff = 1e-8 m²/s, L = 1 mm, C_in = 1 mol/m³ (= T = 1 K proxy), C_out = 0.
+// Analytical (semi-infinite, t << L²/D = 100 s):
+//   C(x,t) = erfc( x / (2*sqrt(D*t)) )
+// At t=30s diffusion length = 2*sqrt(D*t) = 0.35 mm, well within the slab.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    slab        solid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         50;
+
+deltaT          0.1;
+
+writeControl    adjustableRunTime;
+writeInterval   5;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+// ************************************************************************* //

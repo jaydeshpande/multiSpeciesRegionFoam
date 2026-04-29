@@ -1,0 +1,68 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case312-preloaded-slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// 1-D slab: L = 0.1 m, cross-section 1 mm × 1 mm
+// 100 cells in x (dx = 1 mm).  The block is named "slab" so the Allrun
+// script can move constant/polyMesh → constant/slab/polyMesh.
+//
+// Hattab 2024, Section 3.1.2 — preloaded slab diffusion.
+// Physical parameters (scaled from paper's dimensionless units):
+//   L = 0.1 m,  h = 0.01 m (preloaded depth),  D = 1e-6 m²/s
+//   C0 = 1 mol/m³  (initial concentration in [0, h])
+//   Boundary conditions: zeroGradient at both ends (isolated slab)
+
+convertToMeters 1;
+
+vertices
+(
+    (0     0      0    )   // 0
+    (0.1   0      0    )   // 1
+    (0.1   0.001  0    )   // 2
+    (0     0.001  0    )   // 3
+    (0     0      0.001)   // 4
+    (0.1   0      0.001)   // 5
+    (0.1   0.001  0.001)   // 6
+    (0     0.001  0.001)   // 7
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) slab (100 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    left
+    {
+        type    patch;
+        faces   ( (0 4 7 3) );
+    }
+    right
+    {
+        type    patch;
+        faces   ( (1 2 6 5) );
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 5 4)
+            (3 7 6 2)
+            (0 3 2 1)
+            (4 5 6 7)
+        );
+    }
+);
+
+// ************************************************************************* //

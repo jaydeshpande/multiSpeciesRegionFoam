@@ -1,0 +1,12 @@
+EXE_INC = \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -IarrheniusProperty \
+    -ItrappingModel/trappingModel \
+    -ItrappingModel/noTrapping \
+    -ItrappingModel/McNabbFoster \
+    -IspeciesModel
+
+LIB_LIBS = \
+    -lfiniteVolume \
+    -lmeshTools

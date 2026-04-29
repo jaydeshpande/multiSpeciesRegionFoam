@@ -1,0 +1,9 @@
+SOURCE += arrheniusProperty/arrheniusProperty.C
+
+SOURCE += trappingModel/trappingModel/trappingModel.C
+SOURCE += trappingModel/noTrapping/noTrapping.C
+SOURCE += trappingModel/McNabbFoster/McNabbFoster.C
+
+SOURCE += speciesModel/speciesModel.C
+
+LIB = $(FOAM_USER_LIBBIN)/libspeciesTransport

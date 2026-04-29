@@ -1,0 +1,30 @@
+#!/bin/sh
+# Build script for multiSpeciesRegionFoam
+#
+# Usage:
+#   source $FOAM_ETC/bashrc     # or your OpenFOAM-13 activation
+#   ./Allwmake                  # builds libraries in dependency order
+#
+# Parallel builds:
+#   ./Allwmake -j 8
+#
+# Clean:
+#   ./Allwclean
+
+cd "$(dirname "$0")" || exit 1
+
+set -e
+
+echo "==> Building libspeciesTransport"
+wmake libso src/speciesTransport "$@"
+
+echo "==> Building libspeciesCoupling"
+wmake libso src/speciesCoupling "$@"
+
+# Solver modules go here once implemented:
+# echo "==> Building speciesFluid solver module"
+# wmake libso modules/speciesFluid "$@"
+# echo "==> Building speciesSolid solver module"
+# wmake libso modules/speciesSolid "$@"
+
+echo "==> Build complete"

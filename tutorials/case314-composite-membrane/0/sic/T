@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/sic";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 800;
+
+boundaryField
+{
+    sic_outlet
+    {
+        type        fixedValue;
+        value       uniform 800;
+    }
+    sic_to_pyc
+    {
+        type        coupledTemperature;
+        value       uniform 800;
+    }
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

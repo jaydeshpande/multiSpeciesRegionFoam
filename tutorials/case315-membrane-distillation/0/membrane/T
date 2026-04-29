@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case315-membrane-distillation / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal at 333 K (60 °C).  No thermal gradient in this simplified case.
+// Case 3.1.6 replaces this with a linear T profile driving temperature-dependent
+// D_eff(T) and vapour-pressure boundary conditions.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 333;
+
+boundaryField
+{
+    hot_face
+    {
+        type        fixedValue;
+        value       uniform 333;
+    }
+
+    cold_face
+    {
+        type        fixedValue;
+        value       uniform 333;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

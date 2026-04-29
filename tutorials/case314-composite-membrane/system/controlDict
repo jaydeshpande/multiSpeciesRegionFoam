@@ -1,0 +1,60 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case314-composite-membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hattab et al. 2024, Section 3.1.4
+// Composite PyC/SiC membrane, Sieverts-law partition at the interface.
+//
+// REQUIRES: speciesSolid solver module (Phase D) to evolve the C field.
+// Until speciesSolid is built:
+//   - run with "foamMultiRun" to verify T (thermal) coupling loads correctly
+//   - C fields will not evolve, but BC type loading can be confirmed in log
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    pyc         speciesSolid;
+    sic         speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         1000;    // ~ 4 × L²/D = 4 × (5e-4)²/1e-9 = 1000 s to reach SS
+
+deltaT          1;
+
+writeControl    adjustableRunTime;
+writeInterval   100;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesCoupling.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

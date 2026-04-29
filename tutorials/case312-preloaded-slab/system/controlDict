@@ -1,0 +1,60 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case312-preloaded-slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hattab et al. 2024, Section 3.1.2
+// Preloaded slab: C0 = 1 mol/m³ in [0, h=0.01 m], 0 elsewhere.
+// Isolated (zeroGradient) at both faces.  Mass is conserved.
+//
+// Analytical (Fourier cosine series for isolated slab, see validation/):
+//   C(x,t) = C0*h/L + (2*C0/π) Σ_{n=1}^∞ sin(nπh/L)/n cos(nπx/L) exp(-(nπ/L)²Dt)
+//
+// At t = τ = L²/D = 10000 s the slab is fully mixed.  Run to t = 100 s
+// (1% of mixing time) so the profile is still clearly non-uniform.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    slab        speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         100;
+
+deltaT          0.5;
+
+writeControl    adjustableRunTime;
+writeInterval   10;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

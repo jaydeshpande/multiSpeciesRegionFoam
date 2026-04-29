@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case313-trapping / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/slab";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal at 1000 K throughout.
+// T = 1000 K is used by McNabbFoster to evaluate the Arrhenius detrapping rate:
+//   αd(T) = αd0 * exp(−ε / (kB * T))
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 1000;
+
+boundaryField
+{
+    inlet
+    {
+        type        fixedValue;
+        value       uniform 1000;
+    }
+
+    outlet
+    {
+        type        fixedValue;
+        value       uniform 1000;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

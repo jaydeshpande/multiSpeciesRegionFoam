@@ -1,0 +1,47 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case316-membrane-distillation-thermal / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Initial temperature: uniform 313 K (mean of hot and cold faces).
+// The thermal solver evolves T toward the linear steady state:
+//   T_ss(x) = 333 − 40 000·x   [K,  x in m]
+// This happens on τ_T = L²/(π²·α) ≈ 1 s.
+//
+// The T gradient drives D_eff(T) variation and produces the non-linear
+// steady-state water-vapour concentration profile.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 313;
+
+boundaryField
+{
+    hot_face
+    {
+        type        fixedValue;
+        value       uniform 333;   // 60 °C — feed side
+    }
+
+    cold_face
+    {
+        type        fixedValue;
+        value       uniform 293;   // 20 °C — permeate side
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

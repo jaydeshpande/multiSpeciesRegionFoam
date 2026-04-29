@@ -1,0 +1,3 @@
+speciesSolid.C
+
+LIB = $(FOAM_USER_LIBBIN)/libspeciesSolid

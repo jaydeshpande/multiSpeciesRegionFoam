@@ -1,0 +1,55 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case316-membrane-distillation-thermal / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Polypropylene (PP) hollow-fibre membrane.
+// These are realistic properties that drive the thermal solve:
+//   α = kappa/(rho·Cv) = 0.17/(900×1900) ≈ 9.94e-8 m²/s
+//   τ_T = L²/(π²·α) ≈ 1 s  (same order as species time scale)
+//
+// The temperature gradient (333 K → 293 K) produced by the thermal solve
+// drives the Arrhenius variation in D_eff(T) via speciesProperties.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       42;     // kg/kmol (polypropylene monomer)
+    }
+    transport
+    {
+        kappa           0.17;   // W/(m·K) — PP through-plane conductivity
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1900;   // J/(kg·K) — PP specific heat
+    }
+    equationOfState
+    {
+        rho             900;    // kg/m³ — PP density
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case312-preloaded-slab / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/slab";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: T2 (tritium molecule)
+// Validates: 1D spreading from a step initial condition in an isolated slab.
+
+species     C_T2;
+
+// Diffusivity [m²/s]
+//   D = 1e-6 m²/s (scaled from Hattab 3.1.2 to fit L = 0.1 m, t_end = 100 s)
+//   Ea = 0 → isothermal proxy; D is constant.
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-6;
+    Ea          0;
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

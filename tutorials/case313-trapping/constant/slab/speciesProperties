@@ -1,0 +1,57 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case313-trapping / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/slab";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: T2 (tritium molecule)
+// Validates: McNabb-Foster trapping — permeation breakthrough curve.
+//
+// Two trapping regimes (toggle via epsilon):
+//
+//   (a) Weak trapping  ε = 0.09 eV:
+//       αd(1000 K) = αd0 * exp(-0.09 / (kB*1000)) ≈ 3.52e12 s⁻¹
+//       S = 1 + ft*αt/αd ≈ 29.4
+//       D_eff = D/S ≈ 0.034 m²/s
+//       τ_bc  = L²*S/(2π²*D) ≈ 1.5 s   → run to t = 20 s (default)
+//
+//   (b) Strong trapping  ε = 1.5 eV  (change epsilon below, endTime 3000):
+//       αd(1000 K) ≈ 2.74e5 s⁻¹
+//       τ_bd = ft*N*L²/(2*C_in*D) = 500 s
+
+species     C_T2;
+
+// Diffusivity [m²/s] — toy value to give tractable run time
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1.0;
+    Ea          0;    // J/mol — constant D (isothermal)
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        McNabbFoster;
+
+    // Molar trap site density [mol/m³]
+    // N = ft * N_total;  here N_total is the full trap site concentration.
+    // The formula uses N as the normalisation: αt/N gives [m³/(mol·s)].
+    N           0.0525;     // mol/m³
+
+    ft          0.1;        // trap fraction → nt = ft*N = 0.00525 mol/m³
+
+    alphat      1e15;       // trapping rate [1/s]
+    alphad0     1e13;       // detrapping pre-exponential [1/s]
+    epsilon     0.09;       // trap energy [eV]   (change to 1.5 for strong trapping)
+}
+
+// ************************************************************************* //

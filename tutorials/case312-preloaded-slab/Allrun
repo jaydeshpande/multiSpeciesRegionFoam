@@ -1,0 +1,28 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.1.2 — Preloaded-slab diffusion (isolated domain)
+# Hattab et al. 2024, Section 3.1.2
+#
+# Validates: 1-D spreading of a step concentration profile in a no-flux slab
+# against the Fourier cosine series analytical solution.
+# Solver:    foamMultiRun (single solid region, speciesSolid)
+# Runtime:   ~1 minute on a single core
+
+runApplication blockMesh
+
+# blockMesh writes the mesh to constant/polyMesh.
+# foamMultiRun expects it under constant/slab/polyMesh.
+mkdir -p constant/slab
+mv constant/polyMesh constant/slab/polyMesh
+
+# Set C_T2 = 1 mol/m³ in the preloaded region x ∈ [0, 0.01 m]
+runApplication setFields -region slab
+
+runApplication foamMultiRun
+
+echo
+echo "==> Compare with analytical (Fourier cosine series):"
+echo "    python3 validation/preloaded_compare.py"
+echo

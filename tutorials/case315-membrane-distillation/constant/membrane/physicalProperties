@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case315-membrane-distillation / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hydrophobic porous membrane (e.g. polypropylene hollow fibre).
+// Thermal properties are dummies — T is fixed at 333 K and does not evolve.
+// Species (water vapour) transport is governed by speciesProperties.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       42;     // kg/kmol (representative for PP; not used in physics)
+    }
+    transport
+    {
+        kappa           0.17;   // W/(m·K) — PP thermal conductivity
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1900;   // J/(kg·K) — PP specific heat
+    }
+    equationOfState
+    {
+        rho             900;    // kg/m³ — PP density
+    }
+}
+
+// ************************************************************************* //

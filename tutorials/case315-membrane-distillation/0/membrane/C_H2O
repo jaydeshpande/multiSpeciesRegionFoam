@@ -1,0 +1,47 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case315-membrane-distillation / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      C_H2O;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Water vapour concentration in the membrane pores [mol/m³].
+//
+// hot_face (x = 0): C_hot = 7.0 mol/m³  [p_sat(60°C)/RT at 333 K]
+// cold_face (x = L): C_cold = 1.0 mol/m³ [p_sat(20°C)/RT at 293 K]
+//
+// Analytical steady state: C_ss(x) = 7 − 6000·x  (linear, units: mol/m³, x in m)
+// Steady-state flux:  J_ss = D_eff·ΔC/L = 1e-7 × 6 / 1e-3 = 6e-7 mol/(m²·s)
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    hot_face
+    {
+        type        fixedValue;
+        value       uniform 7.0;    // mol/m³  — feed-side saturation
+    }
+
+    cold_face
+    {
+        type        fixedValue;
+        value       uniform 1.0;    // mol/m³  — permeate-side saturation
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

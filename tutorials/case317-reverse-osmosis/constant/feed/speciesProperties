@@ -1,0 +1,46 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case317-reverse-osmosis / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/feed";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Feed boundary layer: diffusion of water (H2O) toward the membrane.
+// D_feed = 1e-9 m²/s — same as membrane, representing concentration polarisation.
+// Ks_feed = 2000 mol/m³ — Henry constant for water in the liquid feed.
+//
+// At the feed/membrane interface:
+//   K_H = Ks_m / Ks_feed = 1000/2000 = 0.5
+//   → C_membrane = 0.5 × C_feed  (water less concentrated in polymer than in water)
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;   // m²/s
+    Ea          0;
+}
+
+// Ks is the Henry constant for this region.
+// The interface BC reads Ks (self) and KsNbr (membrane side).
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 2000;   // mol/m³  — liquid-phase solubility
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

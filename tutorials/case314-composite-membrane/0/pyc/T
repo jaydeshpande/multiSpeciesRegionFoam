@@ -1,0 +1,39 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/pyc";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal at 800 K throughout.  T is constant and drives Arrhenius D(T).
+// For this test case (Ea=0) T has no effect on D; kept realistic for future use.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 800;
+
+boundaryField
+{
+    pyc_inlet
+    {
+        type        fixedValue;
+        value       uniform 800;
+    }
+    pyc_to_sic
+    {
+        type        coupledTemperature;
+        value       uniform 800;
+    }
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

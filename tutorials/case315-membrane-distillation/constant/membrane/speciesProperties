@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case315-membrane-distillation / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: water vapour (H2O)
+// Validates: steady-state diffusion through a porous membrane under a fixed
+// vapour concentration gradient (simplified, isothermal DCMD).
+//
+// D_eff = D_air·ε/τ with ε = 0.7, τ = 2.1, D_air(60°C) ≈ 3e-5 m²/s
+// → D_eff ≈ 1e-5 m²/s (realistic).  Scaled to 1e-7 m²/s here to match
+// the 10× inflated membrane thickness (L = 1 mm vs realistic 100 µm),
+// preserving the same time constant τ_SS = L²/D_eff = 10 s.
+//
+// Boundary concentrations correspond to saturation at each face temperature:
+//   C_hot  = p_sat(60°C) / RT = 19 900 / (8.314 × 333) ≈ 7.18 → 7.0 mol/m³
+//   C_cold = p_sat(20°C) / RT =  2 340 / (8.314 × 293) ≈ 0.96 → 1.0 mol/m³
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-7;   // m²/s  (effective pore diffusivity)
+    Ea          0;                         // J/mol (isothermal: constant D)
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

@@ -1,0 +1,46 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case313-trapping / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/slab";
+    object      C_T2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// T2 concentration [mol/m³].
+// Permeation geometry: high-pressure (C_in) on the left, vacuum on the right.
+// Analytical steady state: C_ss(x) = C_in * (1 - x/L)   (linear profile).
+//
+// C_in = 5.25e-6 mol/m³ chosen so that C_in << N = 0.0525 mol/m³
+// (low-occupancy limit), which validates the linear effective-diffusivity regime.
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    inlet
+    {
+        type        fixedValue;
+        value       uniform 5.25e-6;   // mol/m³
+    }
+
+    outlet
+    {
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case312-preloaded-slab / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/slab";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal at 500 K throughout.
+// Ea = 0 in speciesProperties so D is constant regardless of T.
+// fixedValue at both ends ensures T does not drift.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 500;
+
+boundaryField
+{
+    left
+    {
+        type        fixedValue;
+        value       uniform 500;
+    }
+
+    right
+    {
+        type        fixedValue;
+        value       uniform 500;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

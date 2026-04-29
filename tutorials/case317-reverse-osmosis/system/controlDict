@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case317-reverse-osmosis
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Case 3.1.7 — Reverse osmosis, solution-diffusion model
+//
+// The sievertsCoupledMixed BC (linear partition mode) represents Henry's law
+// at the feed/membrane interface:  C_m = K_H · C_f  with K_H = 0.5.
+//
+// The feed region models the concentration-polarisation boundary layer;
+// the membrane region models diffusion through the dense polymer matrix.
+//
+// τ_SS ≈ L² / D = (5e-4)² / 1e-9 = 250 s per region.
+// Run to t = 1000 s for a well-established steady state.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    feed        speciesSolid;
+    membrane    speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         1000;
+
+deltaT          1;
+
+writeControl    adjustableRunTime;
+writeInterval   100;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesCoupling.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

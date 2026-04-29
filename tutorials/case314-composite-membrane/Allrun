@@ -1,0 +1,23 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.1.4 — Composite PyC/SiC membrane with Sieverts partition
+# Hattab et al. 2024, Section 3.1.4
+#
+# REQUIREMENT: speciesSolid solver module must be built (Phase D).
+# Until then, run with foamMultiRun (solid regions only) to verify:
+#   - mesh generation and region splitting
+#   - library loading (libspeciesCoupling.so, libspeciesTransport.so)
+#   - T field coupling via coupledTemperature (thermal part works)
+# The C_T2 field will not evolve without speciesSolid.
+
+runApplication blockMesh
+runApplication splitMeshRegions -cellZones -overwrite
+
+runApplication foamMultiRun
+
+echo
+echo "==> Compare with analytical at steady state (t >> 250 s):"
+echo "    python3 validation/sieverts_compare.py"
+echo

@@ -1,0 +1,37 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case317-reverse-osmosis / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dense polyamide RO membrane.  Realistic thermal properties (PA-6,6).
+// Temperature is fixed at 333 K so the thermal solve is a trivial placeholder.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie      { molWeight 114; }      // PA-6,6 repeat unit
+    transport   { kappa 0.25; }         // W/(m·K) — polyamide
+    thermodynamics { hf 0; Cv 1700; }  // J/(kg·K)
+    equationOfState { rho 1300; }       // kg/m³
+}
+
+// ************************************************************************* //

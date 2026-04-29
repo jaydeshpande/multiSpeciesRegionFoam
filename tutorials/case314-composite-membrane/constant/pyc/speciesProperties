@@ -1,0 +1,45 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case314-composite-membrane / pyc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/pyc";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: T2 (tritium molecule)
+// All Arrhenius coefficients are isothermal-proxy values (Ea = 0):
+//   X(T) = X0 * exp(-Ea / (R*T)) → X = X0  for all T.
+// Replace with literature Arrhenius fits for real SiC/PyC once validated.
+
+species     C_T2;  // must match the field file name in 0/pyc/
+
+// Diffusivity [m²/s]
+// D_PyC = 1e-9 m²/s (equal to D_SiC for this symmetric test)
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;
+    Ea          0;                       // J/mol (isothermal proxy)
+}
+
+// Sieverts solubility [mol/m³] — determines interface partition.
+// Ks_PyC / Ks_SiC = 2 (PyC more soluble), giving C_interface jump of 2x.
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 2000;   // mol/m³
+    Ea          0;
+}
+
+source      0;       // mol/(m³·s) — no bulk generation
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

@@ -1,0 +1,32 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.1.3 — McNabb-Foster trapping, permeation breakthrough
+# Hattab et al. 2024, Section 3.1.3
+#
+# Default: weak trapping (ε = 0.09 eV), endTime = 20 s.
+#   D_eff ≈ D/29.4,  τ_bc ≈ 1.5 s  → reaches steady state by t = 20 s.
+#
+# For strong trapping (ε = 1.5 eV):
+#   1. Set epsilon 1.5 in constant/slab/speciesProperties
+#   2. Set endTime 3000 in system/controlDict
+#   3. Rerun and compare: python3 validation/trapping_compare.py --time 3000 --epsilon 1.5
+#
+# Solver:  foamMultiRun (single solid region, speciesSolid + McNabbFoster)
+# Runtime: ~1 minute on a single core
+
+runApplication blockMesh
+
+mkdir -p constant/slab
+mv constant/polyMesh constant/slab/polyMesh
+
+runApplication foamMultiRun
+
+echo
+echo "==> Compare with analytical steady-state profile:"
+echo "    python3 validation/trapping_compare.py --time 20 --epsilon 0.09"
+echo
+echo "    For strong trapping (after changing epsilon=1.5, endTime=3000):"
+echo "    python3 validation/trapping_compare.py --time 3000 --epsilon 1.5"
+echo

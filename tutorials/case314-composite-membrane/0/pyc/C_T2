@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case314-composite-membrane / pyc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/pyc";
+    object      C_T2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// T2 (tritium) concentration in PyC.
+// Units: mol/m³
+//
+// Steady-state analytical (for verification):
+//   C_pyc(x) = 1 - (1/3) * x / L_pyc   (linear, from 1.0 to 2/3 mol/m³)
+// Transient: starts at 0, converges to steady-state over ~L²/D = 250 s
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    pyc_inlet
+    {
+        // High-pressure side: C_in = Ks * sqrt(p_inlet)
+        // For this test: prescribed directly as 1 mol/m³
+        type        fixedValue;
+        value       uniform 1;    // mol/m³
+    }
+
+    pyc_to_sic
+    {
+        // Sieverts-law partition across the PyC/SiC interface.
+        // C_pyc / Ks_pyc = C_sic / Ks_sic  (equal partial pressures)
+        // Analytical steady-state: C_pyc_interface = 2/3 mol/m³
+        type        sievertsCoupledMixed;
+        nbrField    C_T2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0          [0 -3 0 0 1 0 0] 2000;   // mol/m³  (Ks_PyC)
+            Ea          0;
+        }
+        KsNbr
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;   // mol/m³  (Ks_SiC)
+            Ea          0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

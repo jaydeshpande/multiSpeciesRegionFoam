@@ -1,0 +1,48 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/sic";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SiC (silicon carbide) thermal properties.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       40;    // SiC
+    }
+    transport
+    {
+        kappa           120;   // W/(m·K)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              750;   // J/(kg·K)
+    }
+    equationOfState
+    {
+        rho             3210;  // kg/m³
+    }
+}
+
+// ************************************************************************* //

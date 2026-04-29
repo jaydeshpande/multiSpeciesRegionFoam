@@ -1,0 +1,14 @@
+Case directory: /home/ubuntu/jaydeep/OpenFOAM-13-master/multiSpeciesRegionFoam/tutorials/case314-composite-membrane
+
+Steady-state analytical values:
+  C_pyc(inlet)      = 1.0000 mol/m³
+  C_pyc(interface)  = 0.6667 mol/m³
+  C_sic(interface)  = 0.3333 mol/m³
+  C_sic(outlet)     = 0.0000 mol/m³
+  Flux J            = 6.667e-07 mol/(m²·s)
+
+Checking t = 1000 s against steady-state analytical
+  pyc: max relative error = 3.326e-01  ✗ (>1%)
+  sic: max relative error = 5.005e-01  ✗ (>1%)
+
+FAIL

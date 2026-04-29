@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case312-preloaded-slab / slab
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/slab";
+    object      C_T2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// T2 concentration [mol/m³].
+// Initial condition: uniform 0 throughout — setFields overrides x ∈ [0, 0.01 m]
+// to C0 = 1 mol/m³ before the run starts (see Allrun, system/setFieldsDict).
+//
+// Both faces are zero-flux (isolated slab): total mass is conserved.
+// After full mixing: C_uniform = C0 * h / L = 1 * 0.01 / 0.1 = 0.1 mol/m³.
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    left
+    {
+        type        zeroGradient;
+    }
+
+    right
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

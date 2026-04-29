@@ -1,0 +1,78 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case315-membrane-distillation
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hydrophobic porous membrane: L = 1 mm, cross-section 1 mm × 1 mm.
+// 100 cells in x (dx = 10 µm).
+//
+// Case 3.1.5 — Simplified (isothermal) membrane distillation.
+// Hot feed (60 °C) on the left, cold permeate (20 °C) on the right.
+// Both face concentrations are fixed at the equilibrium vapour values.
+//
+// Physical parameters:
+//   Species:  water vapour (C_H2O)
+//   L         = 1e-3 m       (membrane thickness, 10× realistic for tractable τ_SS)
+//   D_eff     = 1e-7 m²/s    (effective pore diffusivity: D_air·ε/τ, scaled)
+//   C_hot     = 7.0 mol/m³   (p_sat(60°C)/RT ≈ 7.18 mol/m³ at 333 K)
+//   C_cold    = 1.0 mol/m³   (p_sat(20°C)/RT ≈ 0.96 mol/m³ at 293 K)
+//   T         = 333 K        (isothermal: no thermal gradient in this case)
+//   τ_SS      = L²/D_eff = 10 s  →  run to t = 100 s (10 τ_SS)
+//
+// Analytical steady state (linear profile):
+//   C_ss(x) = C_hot + (C_cold − C_hot)·x/L = 7 − 6000·x
+//   J_ss    = D_eff·(C_hot − C_cold)/L = 6e-7 mol/(m²·s)
+
+convertToMeters 1;
+
+vertices
+(
+    (0      0      0    )   // 0
+    (1e-3   0      0    )   // 1
+    (1e-3   1e-3   0    )   // 2
+    (0      1e-3   0    )   // 3
+    (0      0      1e-3 )   // 4
+    (1e-3   0      1e-3 )   // 5
+    (1e-3   1e-3   1e-3 )   // 6
+    (0      1e-3   1e-3 )   // 7
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) membrane (100 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    hot_face
+    {
+        type    patch;
+        faces   ( (0 4 7 3) );   // x = 0 (feed side)
+    }
+    cold_face
+    {
+        type    patch;
+        faces   ( (1 2 6 5) );   // x = L (permeate side)
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 5 4)
+            (3 7 6 2)
+            (0 3 2 1)
+            (4 5 6 7)
+        );
+    }
+);
+
+// ************************************************************************* //

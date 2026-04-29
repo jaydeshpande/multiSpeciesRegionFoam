@@ -1,0 +1,11 @@
+#!/bin/sh
+cd "$(dirname "$0")" || exit 1
+
+wclean src/speciesCoupling
+wclean src/speciesTransport
+
+# Remove built artifacts
+rm -f $FOAM_USER_LIBBIN/libspeciesTransport.so
+rm -f $FOAM_USER_LIBBIN/libspeciesCoupling.so
+
+echo "==> Clean complete"

@@ -1,0 +1,30 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.1.5 — Simplified (isothermal) membrane distillation
+# Hattab et al. 2024 / multiSpeciesRegionFoam tutorial series
+#
+# Water vapour diffuses across a porous hydrophobic membrane under fixed
+# concentration BCs.  Temperature is uniform at 333 K (isothermal).
+#
+# Validates: linear steady-state profile  C_ss(x) = 7 − 6000·x  mol/m³
+# and steady-state flux  J_ss = D_eff·ΔC/L = 6e-7 mol/(m²·s).
+#
+# Case 3.1.6 (thermally coupled) adds a linear T gradient, making D_eff(T)
+# non-uniform and replacing the fixed BCs with vapour-pressure-derived values.
+#
+# Solver:  foamMultiRun (single region "membrane", speciesSolid)
+# Runtime: ~1 minute on a single core
+
+runApplication blockMesh
+
+mkdir -p constant/membrane
+mv constant/polyMesh constant/membrane/polyMesh
+
+runApplication foamMultiRun
+
+echo
+echo "==> Compare with analytical steady-state profile:"
+echo "    python3 validation/md_isothermal_compare.py"
+echo

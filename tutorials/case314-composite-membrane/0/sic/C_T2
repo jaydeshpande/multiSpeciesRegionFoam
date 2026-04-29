@@ -1,0 +1,62 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case314-composite-membrane / sic
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/sic";
+    object      C_T2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// T2 concentration in SiC.
+//
+// Steady-state analytical:
+//   C_sic(x) = (1/3) * (1 - (x - L_pyc) / L_sic)  (linear, 1/3 to 0 mol/m³)
+// Interface value: C_sic = 1/3 mol/m³  (C_pyc/Ks_pyc = C_sic/Ks_sic ✓)
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    sic_outlet
+    {
+        // Vacuum (depletion) side
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    sic_to_pyc
+    {
+        // Mirror BC on the SiC side of the interface.
+        // Both sides must use sievertsCoupledMixed with swapped Ks/KsNbr.
+        type        sievertsCoupledMixed;
+        nbrField    C_T2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;   // mol/m³  (Ks_SiC — this side)
+            Ea          0;
+        }
+        KsNbr
+        {
+            X0          [0 -3 0 0 1 0 0] 2000;   // mol/m³  (Ks_PyC — nbr side)
+            Ea          0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

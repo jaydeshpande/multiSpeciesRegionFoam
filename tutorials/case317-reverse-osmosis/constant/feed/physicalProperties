@@ -1,0 +1,38 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case317-reverse-osmosis / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/feed";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Feed boundary-layer region.  Treated as a solid-proxy with Cv = 1, rho = 1
+// so the thermal field stays constant at 333 K.  The species transport in this
+// region represents diffusion through the concentration-polarisation layer.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie      { molWeight 18; }
+    transport   { kappa 1; }
+    thermodynamics { hf 0; Cv 1; }
+    equationOfState { rho 1; }
+}
+
+// ************************************************************************* //
