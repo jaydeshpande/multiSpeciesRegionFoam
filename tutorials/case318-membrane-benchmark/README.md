@@ -1,4 +1,4 @@
-# Case 3.3.1 — Membrane Diffusion Benchmark
+# case318 — Membrane Diffusion Benchmark
 
 **Source:** Hattab et al. 2024, *Fusion Eng. Des.* **202**, 114362, Section 3.3.1
 **Solver:** `foamMultiRun` with `speciesSolid` region module
@@ -40,11 +40,7 @@ so $D$ is strictly constant throughout the simulation.
 
 With $C(0,t) = C_1$, $C(L,t) = 0$, and $C(x,0) = 0$, the solution is:
 
-$$C(x,t) = C_1\!\left(1 - \frac{x}{L}\right)
-           - \frac{2C_1}{\pi}
-             \sum_{n=1}^{\infty}
-             \frac{1}{n}\sin\!\left(\frac{n\pi x}{L}\right)
-             \exp\!\!\left[-\!\left(\frac{n\pi}{L}\right)^{\!2} D\, t\right]$$
+$$C(x,t) = C_1\left(1 - \frac{x}{L}\right) - \frac{2C_1}{\pi} \sum_{n=1}^{\infty} \frac{1}{n} \sin\left(\frac{n\pi x}{L}\right) \exp\left[-\left(\frac{n\pi}{L}\right)^2 D\, t\right]$$
 
 **Derivation sketch:**
 
