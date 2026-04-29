@@ -1,0 +1,16 @@
+platforms/
+lnInclude/
+Make/*/
+*.dep
+.claude/
+
+#ignore all time directories except 0 #
+
+[1-9]*
+
+#ignore openfoam directories generated during runs#
+polyMesh/
+processor*/
+*.foam
+log.*
+

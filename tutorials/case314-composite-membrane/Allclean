@@ -1,7 +1,7 @@
 #!/bin/sh
 cd "${0%/*}" || exit 1
-. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+. "$WM_PROJECT_DIR/bin/tools/CleanFunctions"
 
-foamCleanCase
+cleanCase
 rm -rf constant/pyc/polyMesh constant/sic/polyMesh constant/polyMesh
 rm -f  log.*
