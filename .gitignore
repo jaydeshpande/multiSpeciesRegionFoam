@@ -1,6 +1,6 @@
 platforms/
 lnInclude/
-Make/*/
+**/Make/
 *.dep
 .claude/
 
