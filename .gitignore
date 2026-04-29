@@ -24,3 +24,4 @@
 # Ignore log files from solvers and utilities
 log.*
 *.log
+cellToRegion

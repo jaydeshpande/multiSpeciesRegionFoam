@@ -80,33 +80,41 @@ def analytical_profile(x_eval):
 
 
 def read_of_field(path, n_cells):
+    """Parse an ASCII OpenFOAM volScalarField and return the internalField values.
+
+    Uses a three-state machine so that integer-valued data (e.g. T=333, T=293)
+    are never confused with the cell-count line that precedes the opening '('.
+      scanning → found 'internalField nonuniform' → header (skip count line)
+      header   → found '('                        → data  (read values)
+      data     → found ');'                       → done
+    """
+    state = "scanning"
     values = []
-    in_list = False
     with open(path) as fh:
         for line in fh:
             s = line.strip()
-            if "internalField" in s:
-                if "uniform" in s:
-                    try:
-                        val = float(s.split()[-1].rstrip(";"))
-                        return np.full(n_cells, val)
-                    except ValueError:
-                        pass
-                elif "nonuniform" in s:
-                    in_list = True
-                continue
-            if in_list:
-                if s in ("(", ")"):
-                    continue
-                elif s == ");":
+            if state == "scanning":
+                if "internalField" in s:
+                    # Check nonuniform FIRST — "uniform" is a substring of "nonuniform"
+                    if "nonuniform" in s:
+                        state = "header"
+                    elif "uniform" in s:
+                        try:
+                            val = float(s.split()[-1].rstrip(";"))
+                            return np.full(n_cells, val)
+                        except ValueError:
+                            pass
+            elif state == "header":
+                # Skip the cell-count line and any blank lines; stop at '('
+                if s == "(":
+                    state = "data"
+            elif state == "data":
+                if s == ");":
                     break
-                elif s.isdigit():
-                    continue
-                else:
-                    try:
-                        values.append(float(s))
-                    except ValueError:
-                        pass
+                try:
+                    values.append(float(s))
+                except ValueError:
+                    pass  # skip ')' or unexpected tokens
     return np.array(values)
 
 
@@ -150,11 +158,27 @@ def check_time(case_dir, time_str, tol_rel=0.02):
     return max_err_C, max_err_T
 
 
+def available_times(case_dir):
+    """Return sorted list of non-zero time directory names that contain membrane data."""
+    times = []
+    for name in os.listdir(case_dir):
+        try:
+            t = float(name)
+        except ValueError:
+            continue
+        if t <= 0:
+            continue
+        if os.path.isdir(os.path.join(case_dir, name, "membrane")):
+            times.append(name)
+    return sorted(times, key=float)
+
+
 def main():
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument("--case",  default=".")
-    p.add_argument("--times", nargs="+", default=["10", "20"])
+    p.add_argument("--times", nargs="+", default=None,
+                   help="Time directories to check (default: all available)")
     args = p.parse_args()
 
     case_dir = os.path.abspath(args.case)
@@ -180,8 +204,13 @@ def main():
     print(f"  (isothermal case 315 J_ss = {1e-7*6/L:.4e} mol/(m²·s) for comparison)")
     print()
 
+    times_to_check = args.times if args.times is not None else available_times(case_dir)
+    if not times_to_check:
+        print("No data found — run Allrun first.")
+        sys.exit(1)
+
     results_C = {}
-    for t_str in args.times:
+    for t_str in times_to_check:
         err_C, _ = check_time(case_dir, t_str)
         if err_C is not None:
             results_C[t_str] = err_C
@@ -190,10 +219,15 @@ def main():
         print("No data found — run Allrun first.")
         sys.exit(1)
 
-    all_pass = all(v < 0.02 for v in results_C.values())
+    # PASS/FAIL is based on the LAST time only.
+    # Early times are shown for convergence history but are transient
+    # (τ_SS = L²/D̄ ≈ 10 s) and are not expected to match the steady-state profile.
+    last_t = sorted(results_C, key=float)[-1]
+    passed = results_C[last_t] < 0.02
     print()
-    print("PASS" if all_pass else "FAIL")
-    sys.exit(0 if all_pass else 1)
+    print(f"(Pass/fail evaluated at t={last_t} s — last available write time)")
+    print("PASS" if passed else "FAIL")
+    sys.exit(0 if passed else 1)
 
 
 if __name__ == "__main__":

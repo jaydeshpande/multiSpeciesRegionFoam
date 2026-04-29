@@ -42,35 +42,37 @@ def J_steady():
 
 
 def read_of_field(path):
-    """Return internal field values from an ASCII OpenFOAM volScalarField."""
+    """Return internal field values from an ASCII OpenFOAM volScalarField.
+
+    Uses a three-state machine so that integer-valued data are never confused
+    with the cell-count line that precedes the opening '('.
+    """
+    state = "scanning"
     values = []
-    in_list = False
     with open(path) as fh:
         for line in fh:
             s = line.strip()
-            if "internalField" in s:
-                if "uniform" in s:
-                    # uniform field — all cells have the same value
-                    try:
-                        val = float(s.split()[-1].rstrip(";"))
-                        return np.full(N_cells, val)
-                    except ValueError:
-                        pass
-                elif "nonuniform" in s:
-                    in_list = True
-                continue
-            if in_list:
+            if state == "scanning":
+                if "internalField" in s:
+                    # Check nonuniform FIRST — "uniform" is a substring of "nonuniform"
+                    if "nonuniform" in s:
+                        state = "header"
+                    elif "uniform" in s:
+                        try:
+                            val = float(s.split()[-1].rstrip(";"))
+                            return np.full(N_cells, val)
+                        except ValueError:
+                            pass
+            elif state == "header":
                 if s == "(":
-                    continue
-                elif s == ");":
+                    state = "data"
+            elif state == "data":
+                if s == ");":
                     break
-                elif s.isdigit():
-                    continue
-                else:
-                    try:
-                        values.append(float(s))
-                    except ValueError:
-                        pass
+                try:
+                    values.append(float(s))
+                except ValueError:
+                    pass
     return np.array(values)
 
 

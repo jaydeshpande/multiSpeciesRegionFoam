@@ -14,12 +14,12 @@ FoamFile
 // Preloaded region: C_T2 = 1 mol/m³ for x ∈ [0, h] = [0, 0.01 m].
 // The remainder of the slab (x ∈ [h, L]) starts at 0.
 
-defaultFieldValues
+default
 (
     volScalarFieldValue C_T2 0
 );
 
-regions
+zones
 (
     boxToCell
     {
