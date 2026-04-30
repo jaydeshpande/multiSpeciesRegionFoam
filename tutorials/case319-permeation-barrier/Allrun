@@ -1,0 +1,21 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+
+echo "============================================================"
+echo " case319-permeation-barrier"
+echo " WC coating vs uncoated SS316 hydrogen permeation comparison"
+echo "============================================================"
+echo
+
+echo "==> [1/2] Running uncoated SS316 tube..."
+( cd no_coating && ./Allrun )
+
+echo
+echo "==> [2/2] Running WC-coated SS316 tube..."
+( cd with_coating && ./Allrun )
+
+echo
+echo "==> Compare permeation flux and concentration profiles:"
+echo "    python3 validation/permeation_compare.py"
+echo "    python3 validation/permeation_compare.py --plot"
+echo

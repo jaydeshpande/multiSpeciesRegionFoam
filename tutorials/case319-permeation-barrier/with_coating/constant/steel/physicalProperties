@@ -1,0 +1,49 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating / steel
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/steel";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Stainless Steel 316 at T = 1073 K (800°C).
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       56;       // g/mol
+    }
+    transport
+    {
+        kappa           22;       // W/(m·K) — SS316 at 800°C
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              530;      // J/(kg·K)
+    }
+    equationOfState
+    {
+        rho             7960;     // kg/m³
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating / wc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/wc";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: H2 dissolved in WC (tungsten carbide) permeation barrier
+//
+// Diffusivity Arrhenius parameters:
+//   Source: estimated to reproduce a permeation reduction factor (PRF) ≈ 200
+//   relative to bare SS316 at 1073 K, consistent with reported WC coating PRF
+//   ranges of 10²–10³ (Hollenberg et al. 1995, Fusion Eng. Des. 28, 190-208).
+//
+//   D_WC(T) = 1.0e-7 × exp(-97830 / (R×T))  m²/s
+//   At T = 1073 K:  D_WC = 1.73e-12 m²/s  (100× lower than D_SS316)
+//   Ea_WC = 97.8 kJ/mol  (higher barrier than SS316's 71.3 kJ/mol)
+//
+// Sieverts solubility Ks (relative units, only ratio Ks_SS316/Ks_WC matters):
+//   Ks_WC = 100 mol/m³,  Ks_SS316 = 1000 mol/m³  →  ratio = 10
+//   True Sieverts constant of WC is approximately 1/10 that of SS316.
+//   At T = 1073 K, P = 1 bar:  C_WC_inner = Ks_WC_true × sqrt(P) = 0.0651 mol/m³
+//   This value is set directly in 0/wc/C_H2 as a fixedValue BC.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1.0e-7;     // m²/s  (pre-exponential)
+    Ea          97830;                          // J/mol  (11766 K × 8.314)
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 100;          // mol/m³  (relative)
+    Ea          0;
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

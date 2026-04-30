@@ -1,0 +1,57 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / no_coating
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SS316 tube only — reference case for the permeation barrier comparison.
+//
+// T = 1073 K (800°C),  P_H2 = 1 bar
+// D_SS316(1073 K) = 1.73e-10 m²/s
+// tau_SS = L²/D = (0.5e-3)² / 1.73e-10 = 1446 s
+// endTime = 4000 s ≈ 2.77 tau_SS  →  simulation reaches near-steady-state.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    steel   speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         4000;
+
+deltaT          1;
+
+writeControl    adjustableRunTime;
+writeInterval   400;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

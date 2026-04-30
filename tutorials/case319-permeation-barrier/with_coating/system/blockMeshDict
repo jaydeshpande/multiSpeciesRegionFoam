@@ -1,0 +1,75 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Two-region tube wall: WC permeation barrier (0-0.1 mm) + SS316 (0.1-0.6 mm).
+//
+// Geometry (1-D planar approximation, valid for t/r << 1):
+//   x = 0      inner wall of WC coating (contact with H2 gas)
+//   x = 0.1 mm WC / SS316 interface — Sieverts jump condition
+//   x = 0.6 mm outer wall of SS316 (atmosphere, C → 0)
+//
+// Mesh: 20 cells in WC (Δx = 5 μm), 100 cells in SS316 (Δx = 5 μm).
+// splitMeshRegions -cellZones -overwrite creates the coupled interface patches:
+//   wc_to_steel  (in wc region)
+//   steel_to_wc  (in steel region)
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    (0    0   0)    // 0  — WC inner,     y=0, z=0
+    (0.1  0   0)    // 1  — interface,    y=0, z=0
+    (0.6  0   0)    // 2  — steel outer,  y=0, z=0
+    (0    1   0)    // 3  — WC inner,     y=1, z=0
+    (0.1  1   0)    // 4  — interface,    y=1, z=0
+    (0.6  1   0)    // 5  — steel outer,  y=1, z=0
+    (0    0   1)    // 6  — WC inner,     y=0, z=1
+    (0.1  0   1)    // 7  — interface,    y=0, z=1
+    (0.6  0   1)    // 8  — steel outer,  y=0, z=1
+    (0    1   1)    // 9  — WC inner,     y=1, z=1
+    (0.1  1   1)    // 10 — interface,    y=1, z=1
+    (0.6  1   1)    // 11 — steel outer,  y=1, z=1
+);
+
+blocks
+(
+    hex (0 1 4 3 6 7 10 9)  wc    (20  1 1) simpleGrading (1 1 1)
+    hex (1 2 5 4 7 8 11 10) steel (100 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    wc_inner
+    {
+        type    patch;
+        faces   ( (0 6 9 3) );        // x = 0, WC inner wall
+    }
+    steel_outer
+    {
+        type    patch;
+        faces   ( (2 5 11 8) );       // x = 0.6 mm, SS316 outer wall
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 7 6)    (3 4 10 9)   // y faces — WC
+            (0 3 4 1)    (6 7 10 9)   // z faces — WC
+            (1 2 8 7)    (4 5 11 10)  // y faces — SS316
+            (1 4 5 2)    (7 8 11 10)  // z faces — SS316
+        );
+    }
+);
+
+// ************************************************************************* //

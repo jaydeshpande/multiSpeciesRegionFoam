@@ -1,0 +1,41 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating / wc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/wc";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal at 1073 K (800°C). fixedValue prevents numerical drift.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 1073;
+
+boundaryField
+{
+    wc_inner
+    {
+        type        fixedValue;
+        value       uniform 1073;
+    }
+
+    wc_to_steel
+    {
+        type        coupledTemperature;
+        value       uniform 1073;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

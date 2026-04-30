@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating / steel
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/steel";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: H2 dissolved in SS316
+// Source:  Forcey et al. 1988, J. Nucl. Mater. 160, 153-159, Table 1 (316L SS)
+//
+// D(T) = 5.08e-7 × exp(-71334/(R×T))  m²/s
+// At T = 1073 K:  D_SS316 = 1.73e-10 m²/s
+//
+// Ks_SS316 / Ks_WC = 10  →  Ks_SS316 = 1000 mol/m³ (relative units)
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 5.08e-7;    // m²/s
+    Ea          71334;                          // J/mol (= 8580 K × 8.314)
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;         // mol/m³  (relative)
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

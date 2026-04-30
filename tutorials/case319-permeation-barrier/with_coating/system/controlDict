@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// WC-coated SS316 tube — permeation barrier case.
+//
+// T = 1073 K,  P_H2 = 1 bar
+// D_WC(1073 K) = 1.73e-12 m²/s  (100× lower than SS316)
+// D_SS(1073 K) = 1.73e-10 m²/s
+//
+// WC characteristic time: tau_WC = (0.1 mm)² / D_WC = 5780 s
+// SS316 characteristic time: tau_SS = (0.5 mm)² / D_SS = 1446 s
+//
+// At t = 4000 s:  SS316 is near steady state; WC is at ~69% of tau_WC.
+// The permeation flux through the outer wall is dramatically reduced by the WC layer.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    wc      speciesSolid;
+    steel   speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         4000;
+
+deltaT          1;
+
+writeControl    adjustableRunTime;
+writeInterval   400;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesCoupling.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

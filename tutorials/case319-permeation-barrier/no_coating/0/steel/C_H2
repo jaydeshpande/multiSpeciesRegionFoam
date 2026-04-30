@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / no_coating / steel
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/steel";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// H2 in SS316 tube wall.  T = 1073 K,  P_H2 = 1 bar = 100000 Pa.
+//
+// Inner BC (tube_inner):
+//   C = Ks_SS316(T) × sqrt(P_H2)
+//     = 3.89e-4 × exp(1790/1073) × sqrt(100000)
+//     = 2.047e-3 × 316.23 = 0.647 mol/m³  ≈ 0.651 mol/m³
+//   Source: Forcey et al. 1988, Table 1 (316L SS), Sieverts fit.
+//
+// Outer BC (tube_outer):
+//   C = 0  (atmospheric H2 partial pressure ≈ 0, effectively vacuum side)
+//
+// IC: membrane initially H2-free.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    tube_inner
+    {
+        type        fixedValue;
+        value       uniform 0.651;    // mol/m³ = Ks_SS316 × sqrt(P_H2) at 1073 K
+    }
+
+    tube_outer
+    {
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

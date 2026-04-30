@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / no_coating / steel
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/steel";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Species: H2 (hydrogen) dissolved in SS316
+// Source:  Forcey et al. 1988, J. Nucl. Mater. 160, 153-159, Table 1 (316L SS)
+//
+// Diffusivity Arrhenius fit (from Table 1):
+//   D(T) = 5.08e-7 × exp(-8580/T)  m²/s       [T in K]
+//   → X0 = 5.08e-7 m²/s,  Ea = 8580 K × R = 71334 J/mol
+//   At T = 1073 K: D = 1.73e-10 m²/s
+//
+// Sieverts solubility Ks (relative units, only ratio with WC matters):
+//   Ks_SS316 / Ks_WC = 10  →  Ks_SS316 = 1000 mol/m³ (arbitrary scale)
+//   True Sieverts constant: Ks = 3.89e-4 × exp(1790/T) mol/(m³·Pa^0.5)
+//   At T = 1073 K, P = 1 bar: C_inner = Ks × sqrt(P) = 0.651 mol/m³
+//   This value is set directly in 0/steel/C_H2 as a fixedValue BC.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 5.08e-7;    // m²/s  (pre-exponential)
+    Ea          71334;                          // J/mol (= 8580 K × 8.314)
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;         // mol/m³  (relative, ratio matters)
+    Ea          0;
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

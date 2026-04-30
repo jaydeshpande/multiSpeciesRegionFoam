@@ -1,0 +1,6 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+
+( cd no_coating   && ./Allclean )
+( cd with_coating && ./Allclean )
+rm -f  *.png

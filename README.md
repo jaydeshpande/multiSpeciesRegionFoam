@@ -164,6 +164,8 @@ All tutorials are self-contained cases in `tutorials/`. Each directory contains 
 | [case315-membrane-distillation](tutorials/case315-membrane-distillation/README.md) | 1-D isothermal vapour diffusion | Membrane distillation with constant D; linear steady-state profile | `speciesSolid` |
 | [case316-membrane-distillation-thermal](tutorials/case316-membrane-distillation-thermal/README.md) | Vapour diffusion with Arrhenius D(T) | Non-linear steady-state profile from temperature gradient; full energy coupling | `speciesSolid` |
 | [case317-reverse-osmosis](tutorials/case317-reverse-osmosis/README.md) | Solution-diffusion across two regions | Henry (Sieverts) partition at feed/membrane interface; two-region coupling | `speciesSolid` |
+| [case318-membrane-benchmark](tutorials/case318-membrane-benchmark/README.md) | 1-D transient diffusion, constant BCs | Code-to-code benchmark vs Pasler et al. and Fourier sine series; exact analytical solution | `speciesSolid` |
+| [case319-permeation-barrier](tutorials/case319-permeation-barrier/README.md) | WC coating + SS316 tube, Sieverts interface | Real Arrhenius D(T) for both materials; PRF ≈ 200; with/without coating comparison | `speciesSolid` |
 
 ---
 

@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating / wc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/wc";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// H2 dissolved in WC coating.  T = 1073 K,  P_H2 = 1 bar.
+//
+// Inner BC (wc_inner, contact with H2 gas):
+//   C = Ks_WC(T) × sqrt(P_H2)
+//     = (Ks_SS316(T) / 10) × sqrt(P_H2)
+//     = (2.047e-3 / 10) × 316.23 = 0.0647 mol/m³  ≈ 0.0651 mol/m³
+//   Ks_WC is estimated as 1/10 of Ks_SS316 (WC has lower H solubility than metal).
+//
+// WC/SS316 interface (wc_to_steel):
+//   sievertsCoupledMixed — enforces thermodynamic equilibrium:
+//   C_SS / C_WC = Ks_SS316 / Ks_WC = 1000/100 = 10
+//   (concentration jumps 10× upward when entering SS316, which has higher solubility)
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    wc_inner
+    {
+        type        fixedValue;
+        value       uniform 0.0651;   // mol/m³ = Ks_WC × sqrt(P_H2) at 1073 K
+    }
+
+    wc_to_steel
+    {
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 100;    // Ks_WC (this side)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_SS316 (neighbour)
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

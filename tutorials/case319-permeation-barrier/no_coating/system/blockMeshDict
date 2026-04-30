@@ -1,0 +1,69 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / no_coating
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SS316 tube wall only (no permeation barrier coating).
+// Geometry: 1-D planar slab, 0.5 mm thick, 100 cells.
+//
+// Physical context:
+//   Tube inner radius r_i = 10 mm, wall thickness t = 0.5 mm → t/r = 0.05,
+//   so the planar (Cartesian) approximation introduces < 2% error.
+//
+// Material:    SS316 stainless steel
+// x = 0 mm    tube inner wall (contact with H2 gas at 1 bar, 1073 K)
+// x = 0.5 mm  tube outer wall (open to atmosphere, C → 0)
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    (0    0   0)   // 0
+    (0.5  0   0)   // 1
+    (0.5  1   0)   // 2
+    (0    1   0)   // 3
+    (0    0   1)   // 4
+    (0.5  0   1)   // 5
+    (0.5  1   1)   // 6
+    (0    1   1)   // 7
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) steel (100 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    tube_inner
+    {
+        type    patch;
+        faces   ( (0 4 7 3) );    // x = 0, contact with H2 gas
+    }
+    tube_outer
+    {
+        type    patch;
+        faces   ( (1 2 6 5) );    // x = 0.5 mm, open atmosphere
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 5 4)
+            (3 7 6 2)
+            (0 3 2 1)
+            (4 5 6 7)
+        );
+    }
+);
+
+// ************************************************************************* //

@@ -1,0 +1,42 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / no_coating / steel
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/steel";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal at 1073 K (800°C). fixedValue at both ends prevents drift.
+// The Arrhenius D(T) in speciesProperties evaluates to 1.73e-10 m²/s at this T.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 1073;
+
+boundaryField
+{
+    tube_inner
+    {
+        type        fixedValue;
+        value       uniform 1073;
+    }
+
+    tube_outer
+    {
+        type        fixedValue;
+        value       uniform 1073;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

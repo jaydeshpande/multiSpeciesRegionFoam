@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating / wc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/wc";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Tungsten Carbide (WC) at T = 1073 K (800°C).
+// Thermal properties from published ceramics data (Pierson 1996, Handbook of
+// Refractory Carbides); functionally irrelevant since T is held by fixedValue BCs.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       195.85;   // g/mol  (W=183.84 + C=12.01)
+    }
+    transport
+    {
+        kappa           63;       // W/(m·K) — WC at 800°C (decreases with T)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              270;      // J/(kg·K) — WC at 800°C
+    }
+    equationOfState
+    {
+        rho             15630;    // kg/m³  (theoretical density of WC)
+    }
+}
+
+// ************************************************************************* //

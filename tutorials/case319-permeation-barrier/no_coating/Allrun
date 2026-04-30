@@ -1,0 +1,17 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# case319 / no_coating — SS316 tube without permeation barrier
+# Reference case for the with_coating comparison.
+# T = 1073 K,  P_H2 = 1 bar
+# tau_SS = (0.5 mm)² / D_SS316(1073 K) ≈ 1446 s
+# Simulation runs to 4000 s ≈ 2.8 tau_SS (near steady state).
+
+runApplication blockMesh
+
+# foamMultiRun expects mesh under constant/steel/polyMesh.
+mkdir -p constant/steel
+mv constant/polyMesh constant/steel/polyMesh
+
+runApplication foamMultiRun

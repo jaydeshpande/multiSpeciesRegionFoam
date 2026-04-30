@@ -1,0 +1,16 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# case319 / with_coating — WC-coated SS316 tube
+# WC layer: 0.1 mm  (20 cells, Δx = 5 μm)
+# SS316 wall: 0.5 mm (100 cells, Δx = 5 μm)
+# T = 1073 K,  P_H2 = 1 bar
+#
+# splitMeshRegions splits the two-block mesh into:
+#   constant/wc/polyMesh   and   constant/steel/polyMesh
+# and creates coupled interface patches  wc_to_steel / steel_to_wc.
+
+runApplication blockMesh
+runApplication splitMeshRegions -cellZones -overwrite
+runApplication foamMultiRun

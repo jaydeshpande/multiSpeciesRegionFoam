@@ -1,0 +1,62 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case319-permeation-barrier / with_coating / steel
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/steel";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// H2 dissolved in SS316 tube wall (behind WC permeation barrier).
+//
+// Steel/WC interface (steel_to_wc):
+//   sievertsCoupledMixed — mirror of the WC side.
+//   At steady state: C_SS_interface = 10 × C_WC_interface (Sieverts jump).
+//
+// Outer BC (steel_outer):
+//   C = 0  (atmospheric H2 partial pressure ≈ 0)
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    steel_to_wc
+    {
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_SS316 (this side)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 100;    // Ks_WC (neighbour)
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    steel_outer
+    {
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //
