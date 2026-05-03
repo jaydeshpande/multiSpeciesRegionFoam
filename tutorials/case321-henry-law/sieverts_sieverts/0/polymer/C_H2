@@ -1,0 +1,55 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / sieverts_sieverts / polymer
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/polymer";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Polymer (Sieverts, reference case).
+// Left BC: C = 1.0 mol/m³ (Sieverts equilibrium at reference partial pressure).
+// Interface (polymer_to_metal): linear partition, Ks = KsNbr = 1.0
+//   → concentration is continuous (no jump).
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    polymer_left
+    {
+        type        fixedValue;
+        value       uniform 1.0;        // mol/m³ — inlet driving force
+    }
+
+    polymer_to_metal
+    {
+        type        sievertsCoupledMixed;
+        partition   linear;             // Sieverts-Sieverts: C_A = (Ks_A/Ks_B)*C_B
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // self (polymer) Sieverts constant
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // nbr (metal) Sieverts constant
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,94 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Shell-and-tube HX cross-section: FLiBe | SS316 wall | Hitec
+//
+// Three-region 1-D slab through the tube wall (x-direction):
+//   x = 0      to 0.1 mm  →  FLiBe proxy (primary molten salt)
+//   x = 0.1    to 0.6 mm  →  SS316 tube wall (Δx = 10 μm, 50 cells)
+//   x = 0.6    to 0.7 mm  →  Hitec proxy (secondary nitrate salt)
+//
+// The FLiBe and Hitec proxy regions are thin solid layers whose thermal
+// conductivities match the physical fluid values (k_FLiBe = 1.1 W/(m·K),
+// k_Hitec = 0.57 W/(m·K)).  They represent the conductive sub-layer of each
+// fluid and provide the temperature boundary conditions for the wall.
+//
+// Temperature boundary conditions:
+//   x = 0      FLiBe outer face  → fixedValue 1073 K (800°C, FLiBe primary)
+//   x = 0.7 mm Hitec outer face  → fixedValue 673 K  (400°C, Hitec secondary)
+//
+// H₂ boundary conditions:
+//   x = 0      FLiBe outer face  → fixedValue 1.0 mol/m³ (dissolved H₂ in FLiBe)
+//   x = 0.7 mm Hitec outer face  → fixedValue 0          (H₂ removed from Hitec)
+//
+// splitMeshRegions -cellZones -overwrite creates coupled patches:
+//   flibe_to_wall / wall_to_flibe  (Sieverts + temperature coupling)
+//   wall_to_hitec / hitec_to_wall  (Sieverts + temperature coupling)
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    (0    0   0)    //  0  — FLiBe outer,  y=0, z=0
+    (0.1  0   0)    //  1  — FLiBe/wall interface, y=0, z=0
+    (0.6  0   0)    //  2  — wall/Hitec interface, y=0, z=0
+    (0.7  0   0)    //  3  — Hitec outer,  y=0, z=0
+    (0    1   0)    //  4  — FLiBe outer,  y=1, z=0
+    (0.1  1   0)    //  5  — FLiBe/wall interface, y=1, z=0
+    (0.6  1   0)    //  6  — wall/Hitec interface, y=1, z=0
+    (0.7  1   0)    //  7  — Hitec outer,  y=1, z=0
+    (0    0   1)    //  8  — FLiBe outer,  y=0, z=1
+    (0.1  0   1)    //  9  — FLiBe/wall interface, y=0, z=1
+    (0.6  0   1)    // 10  — wall/Hitec interface, y=0, z=1
+    (0.7  0   1)    // 11  — Hitec outer,  y=0, z=1
+    (0    1   1)    // 12  — FLiBe outer,  y=1, z=1
+    (0.1  1   1)    // 13  — FLiBe/wall interface, y=1, z=1
+    (0.6  1   1)    // 14  — wall/Hitec interface, y=1, z=1
+    (0.7  1   1)    // 15  — Hitec outer,  y=1, z=1
+);
+
+blocks
+(
+    hex (0 1 5 4 8 9 13 12)   flibe  (5  1 1) simpleGrading (1 1 1)
+    hex (1 2 6 5 9 10 14 13)  wall   (50 1 1) simpleGrading (1 1 1)
+    hex (2 3 7 6 10 11 15 14) hitec  (5  1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    flibe_left
+    {
+        type    patch;
+        faces   ( (0 8 12 4) );     // x = 0, FLiBe outer face
+    }
+    hitec_right
+    {
+        type    patch;
+        faces   ( (3 7 15 11) );    // x = 0.7 mm, Hitec outer face
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 9 8)    (4 12 13 5)    // y faces — FLiBe
+            (0 4 5 1)    (8 9 13 12)    // z faces — FLiBe
+            (1 2 10 9)   (5 13 14 6)    // y faces — wall
+            (1 5 6 2)    (9 10 14 13)   // z faces — wall
+            (2 3 11 10)  (6 14 15 7)    // y faces — Hitec
+            (2 6 7 3)    (10 11 15 14)  // z faces — Hitec
+        );
+    }
+);
+
+// ************************************************************************* //

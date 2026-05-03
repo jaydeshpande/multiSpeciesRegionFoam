@@ -1,0 +1,4 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+( cd sieverts_sieverts && ./Allclean )
+( cd henry_sieverts    && ./Allclean )

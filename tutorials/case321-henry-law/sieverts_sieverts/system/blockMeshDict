@@ -1,0 +1,72 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Two-layer membrane: polymer (0–0.5 mm) | metal (0.5–1.0 mm).
+// Block names become cellZone / region names after splitMeshRegions -cellZones.
+// The shared internal face at x=0.5 mm is NOT listed in boundary{} —
+// splitMeshRegions creates coupled patches polymer_to_metal / metal_to_polymer.
+//
+// x = 0        polymer left face  (fixedValue C = 1.0 mol/m³)
+// x = 0.5 mm   interface (internal, becomes coupled after split)
+// x = 1.0 mm   metal right face   (fixedValue C = 0, purge)
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    (0.0  0  0)    //  0
+    (0.5  0  0)    //  1
+    (1.0  0  0)    //  2
+    (1.0  1  0)    //  3
+    (0.5  1  0)    //  4
+    (0.0  1  0)    //  5
+    (0.0  0  1)    //  6
+    (0.5  0  1)    //  7
+    (1.0  0  1)    //  8
+    (1.0  1  1)    //  9
+    (0.5  1  1)    // 10
+    (0.0  1  1)    // 11
+);
+
+blocks
+(
+    hex (0 1 4 5 6 7 10 11) polymer (20 1 1) simpleGrading (1 1 1)
+    hex (1 2 3 4 7 8 9 10)  metal   (50 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    polymer_left
+    {
+        type    patch;
+        faces   ( (0 6 11 5) );    // x = 0
+    }
+    metal_right
+    {
+        type    patch;
+        faces   ( (2 3 9 8) );     // x = 1 mm
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 7 6)    (5 11 10 4)    // y faces — polymer
+            (0 5 4 1)    (6 7 10 11)    // z faces — polymer
+            (1 2 8 7)    (4 10 9 3)     // y faces — metal
+            (1 4 3 2)    (7 8 9 10)     // z faces — metal
+        );
+    }
+);
+
+// ************************************************************************* //

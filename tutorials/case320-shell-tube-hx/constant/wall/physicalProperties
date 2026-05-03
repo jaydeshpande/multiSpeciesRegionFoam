@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/wall";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SS316 stainless steel tube wall.
+// Source: Forcey et al. 1988, J. Nucl. Mater. 160, 153-159.
+// Thermal properties at ~950 K (operating temperature range).
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       56;       // g/mol (iron-dominant alloy)
+    }
+    transport
+    {
+        kappa           15;       // W/(m·K) — SS316 at 900-1000 K
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              530;      // J/(kg·K) — SS316 at 900 K
+    }
+    equationOfState
+    {
+        rho             7960;     // kg/m³
+    }
+}
+
+// ************************************************************************* //

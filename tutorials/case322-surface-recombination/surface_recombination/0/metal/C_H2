@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case322-surface-recombination / surface_recombination
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/metal";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Surface recombination/dissociation kinetics at metal_left.
+//
+// The Robin BC:   D * dC/dn = Kd(T) * pGas  -  Kr(T) * C²
+//
+// At equilibrium (dC/dx → 0 in bulk): C_s = sqrt(Kd*pGas/Kr) = 1.0 mol/m³
+// With finite permeation (Da=1):       C_s = (-1+sqrt(5))/2   ≈ 0.618 mol/m³
+//
+// Physical interpretation:
+//   Kd*pGas  = flux of atoms arriving from gas (dissociation)
+//   Kr*C_s²  = flux of atoms leaving as molecules (recombination)
+//   Net flux into solid = D * dC/dn = Kd*pGas - Kr*C_s²
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    metal_left
+    {
+        type        surfaceRecombination;
+
+        Kd                              // dissociation rate [mol/(m²·s·Pa)]
+        {
+            X0      [1 -2 -1 0 -1 0 0] 1e-7;   // pre-exponential
+            Ea      0;                          // J/mol  (isothermal: Ea=0)
+        }
+
+        Kr                              // recombination rate [m⁴/(mol·s)]
+        {
+            X0      [0 4 -1 0 -1 0 0] 1e-7;    // pre-exponential
+            Ea      0;
+        }
+
+        pGas    1.0;                    // [Pa]  gas-phase partial pressure
+
+        value   uniform 0;              // initial placeholder
+    }
+
+    metal_right
+    {
+        type        fixedValue;
+        value       uniform 0;          // purge side: C = 0
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

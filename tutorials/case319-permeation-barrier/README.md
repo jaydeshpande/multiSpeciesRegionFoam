@@ -176,12 +176,13 @@ within 5% of the analytical steady-state value.
 
 ## Physical context
 
-Permeation barriers are critical in:
-- **Fusion reactors** — preventing tritium permeation through first-wall and
-  blanket structures into the coolant
+Permeation barriers are important in:
 - **Hydrogen storage / fuel cells** — limiting hydrogen loss through metal tanks
 - **High-temperature processing** — protecting structural metals from hydrogen
   embrittlement
+- **Fusion energy** — preventing tritium permeation through first-wall and
+  blanket structures into the coolant
+- **Fission energy** — preventing tritium permeation through structural materials in Molten Salt Reactors
 
 WC is an attractive candidate due to its high hardness, chemical stability at
 elevated temperature, and low hydrogen permeability compared to metals.  Real

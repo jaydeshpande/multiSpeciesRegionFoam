@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/hitec";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hitec molten salt (50 wt% NaNO3 + 50 wt% KNO3), secondary loop fluid.
+// Operating range: ~220°C to ~540°C (493–813 K).
+// Modelled as a thin solid proxy layer (0.1 mm) representing the thermal
+// boundary layer adjacent to the tube wall on the shell side.
+//
+// Sources: Bradshaw & Siegel, ASME ESDA2008-59283.
+//   ρ  = 1870 kg/m³  (at ~400°C, 673 K)
+//   Cp = 1560 J/(kg·K)
+//   k  = 0.57 W/(m·K)
+//   MW(NaNO3) = 85, MW(KNO3) = 101 → MW_mix ≈ 93 g/mol
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       93;       // g/mol  (50/50 NaNO3/KNO3)
+    }
+    transport
+    {
+        kappa           0.57;     // W/(m·K)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1560;     // J/(kg·K)
+    }
+    equationOfState
+    {
+        rho             1870;     // kg/m³
+    }
+}
+
+// ************************************************************************* //

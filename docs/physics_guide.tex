@@ -1,0 +1,1091 @@
+%% physics_guide.tex — multiSpeciesRegionFoam Physics Reference
+%% Compile:  pdflatex physics_guide.tex  (run twice for cross-references)
+%%           or:  latexmk -pdf physics_guide.tex
+
+\documentclass[11pt,a4paper]{article}
+
+%% Packages
+\usepackage[top=25mm,bottom=25mm,left=25mm,right=25mm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,array,tabularx}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{siunitx}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{multirow}
+
+%% Colours
+\definecolor{foamblue}{RGB}{0,82,147}
+\definecolor{casegreen}{RGB}{30,120,60}
+\definecolor{eqngray}{RGB}{245,245,248}
+\definecolor{warnorange}{RGB}{200,100,0}
+
+%% Hyperref
+\hypersetup{
+    colorlinks=true,
+    linkcolor=foamblue,
+    citecolor=foamblue,
+    urlcolor=foamblue,
+    pdftitle={multiSpeciesRegionFoam — Physics Reference Guide},
+    pdfauthor={Jaydeep Deshpande},
+}
+
+%% Section formatting
+\titleformat{\section}{\large\bfseries\color{foamblue}}{}{0em}{}[\color{foamblue}\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{foamblue!80}}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+%% tcolorbox styles
+\tcbset{
+  eqbox/.style={
+    enhanced, breakable,
+    colback=eqngray, colframe=foamblue!60,
+    arc=2pt, boxrule=0.6pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt,
+    fonttitle=\bfseries\small\color{foamblue},
+    attach boxed title to top left={yshift=-2mm,xshift=4mm},
+    boxed title style={colback=foamblue!15,colframe=foamblue!60,arc=2pt,boxrule=0.4pt},
+  },
+  casebox/.style={
+    enhanced, breakable,
+    colback=casegreen!5, colframe=casegreen!60,
+    arc=2pt, boxrule=0.6pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt,
+  },
+  notebox/.style={
+    enhanced,
+    colback=warnorange!8, colframe=warnorange!60,
+    arc=2pt, boxrule=0.6pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt,
+  }
+}
+
+%% Header / footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{foamblue}\textit{multiSpeciesRegionFoam — Physics Reference}}
+\fancyhead[R]{\small\color{foamblue}\thepage}
+\fancyfoot[C]{\small\color{gray}OpenFOAM-13 library for multi-region species transport}
+\renewcommand{\headrulewidth}{0.4pt}
+
+%% Notation shortcuts
+\newcommand{\pder}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\mol}{\,\text{mol}}
+\newcommand{\m}{\,\text{m}}
+\newcommand{\K}{\,\text{K}}
+\newcommand{\s}{\,\text{s}}
+\newcommand{\Pa}{\,\text{Pa}}
+\newcommand{\J}{\,\text{J}}
+\newcommand{\W}{\,\text{W}}
+\newcommand{\caseref}[1]{\texttt{\color{casegreen}#1}}
+\newcommand{\bctype}[1]{\texttt{\color{foamblue}#1}}
+\newcommand{\Da}{\mathrm{Da}}
+
+% ============================================================
+\begin{document}
+% ============================================================
+
+\begin{titlepage}
+  \centering
+  \vspace*{20mm}
+  {\color{foamblue}\rule{\linewidth}{2pt}}\\[6mm]
+  {\Huge\bfseries\color{foamblue} multiSpeciesRegionFoam}\\[3mm]
+  {\Large Physics Reference Guide}\\[4mm]
+  {\color{foamblue}\rule{\linewidth}{1pt}}\\[10mm]
+  {\large Species transport through solid membranes and porous materials\\
+   in the OpenFOAM-13 \texttt{foamMultiRun} framework}\\[15mm]
+
+  \begin{tcolorbox}[casebox,width=0.85\linewidth]
+    \textbf{Scope.}
+    This document describes every physical model implemented in the
+    \texttt{multiSpeciesRegionFoam} library: governing equations, material
+    constitutive laws, interface and surface boundary conditions, performance
+    metrics, and numerical discretisation. Each section indicates which tutorial
+    cases (case311–case322) demonstrate the corresponding physics.
+  \end{tcolorbox}
+
+  \vspace{30pt}
+
+
+  {\large\bfseries Jaydeep Deshpande}\\[6mm]
+  \vfill
+  {\small OpenFOAM-13 $\cdot$ \href{https://openfoam.org}{openfoam.org}}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Introduction and Scope}
+\label{sec:intro}
+% ============================================================
+
+\texttt{multiSpeciesRegionFoam} is an OpenFOAM-13 add-on that extends the
+native \texttt{foamMultiRun} multi-region framework with coupled species
+transport.  Each solid region runs the \texttt{speciesSolid} solver module,
+which adds a species conservation equation alongside the inherited thermal
+energy equation.  Inter-region coupling (heat and species) uses OpenFOAM's
+mapped-patch infrastructure, and all new boundary conditions are registered
+in the standard run-time selection tables.
+
+\textbf{Physical scope.}
+The library targets \emph{diffusion-dominated} transport of a dilute dissolved
+species (hydrogen isotopes H/D/T, vapour, dissolved salt) through one or more
+solid layers.  Convection inside the solid and binary diffusion effects are
+neglected; the driving force is the concentration gradient in each layer.
+Typical applications are:
+
+\begin{itemize}[itemsep=2pt]
+  \item Tritium permeation through first-wall and breeding blanket materials in
+        fusion reactors (H, D, T transport; Sieverts-law solubility).
+  \item Dense-film membrane separation: reverse osmosis, membrane distillation,
+        pervaporation (Henry-law solubility, Arrhenius temperature dependence).
+  \item Permeation barriers (tungsten carbide, alumina coatings).
+  \item Hydrogen permeation in heat exchangers with molten-salt coolants.
+\end{itemize}
+
+% ============================================================
+\section{Governing Equations}
+\label{sec:gov}
+% ============================================================
+
+\subsection{Species conservation}
+\label{sec:species}
+
+In each solid region the \emph{mobile} species concentration
+$C\,[\mol\,\m^{-3}]$ satisfies:
+
+\begin{tcolorbox}[eqbox,title={Species equation — every solid region}]
+\begin{equation}\label{eq:species}
+  \pder{C}{t}
+  \;=\;
+  \nabla\cdot\!\bigl(D(T)\,\nabla C\bigr)
+  \;-\; \pder{C_t}{t}
+  \;+\; S_\text{vol}
+\end{equation}
+\end{tcolorbox}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Symbol & Meaning & Units \\
+\midrule
+$C$       & Mobile species concentration      & $\mol\,\m^{-3}$ \\
+$D(T)$    & Temperature-dependent diffusivity  & $\m^2\,\s^{-1}$ \\
+$C_t$     & Trapped concentration (§\ref{sec:trap}) & $\mol\,\m^{-3}$ \\
+$S_\text{vol}$ & Uniform volumetric source     & $\mol\,\m^{-3}\,\s^{-1}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+When trapping is disabled (\texttt{trappingModel noTrapping}), $\partial C_t/\partial t = 0$
+and the equation reduces to pure diffusion.  The source term $S_\text{vol}$ is
+optional and uniform within each region.
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} all twelve tutorial cases.
+  Cases \caseref{case311}–\caseref{case312} use the thermal field $T$ as a
+  species proxy to verify the pure-diffusion solver before species coupling is
+  introduced.
+\end{tcolorbox}
+
+\subsection{Energy conservation}
+\label{sec:energy}
+
+The thermal energy equation is inherited from OpenFOAM-13's \texttt{solid}
+module:
+
+\begin{tcolorbox}[eqbox,title={Energy equation (Fourier conduction)}]
+\begin{equation}\label{eq:energy}
+  \pder{(\rho\, e)}{t}
+  \;+\; \nabla\cdot\mathbf{q}
+  \;=\; S_e,
+  \qquad
+  \mathbf{q} = -\kappa(T)\,\nabla T
+\end{equation}
+\end{tcolorbox}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Symbol & Meaning & Units \\
+\midrule
+$\rho$     & Density                     & $\text{kg}\,\m^{-3}$ \\
+$e$        & Specific internal energy     & $\J\,\text{kg}^{-1}$ \\
+$\mathbf{q}$ & Conductive heat flux       & $\W\,\m^{-2}$ \\
+$\kappa(T)$ & Thermal conductivity        & $\W\,\m^{-1}\,\K^{-1}$ \\
+$S_e$      & Volumetric heat source       & $\W\,\m^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The species and energy equations are solved \emph{sequentially} within each
+PIMPLE outer corrector.  After the energy equation updates $T$, the
+diffusivity $D(T)$ (and all Arrhenius properties) are refreshed before
+assembling the species equation.
+
+\begin{tcolorbox}[casebox]
+  \textbf{Full energy–species coupling:}
+  \caseref{case316} (membrane distillation with Arrhenius $D(T)$ driven by a
+  temperature gradient), \caseref{case320} (three-region shell-and-tube
+  heat exchanger; conjugate heat transfer through FLiBe–SS316–Hitec).\\
+  \textbf{Isothermal (energy solved but $T$ fixed):}
+  \caseref{case311}–\caseref{case315}, \caseref{case317}–\caseref{case319},
+  \caseref{case321}–\caseref{case322}.
+\end{tcolorbox}
+
+\subsection{Species and energy coupling}
+
+In multi-region cases, the PIMPLE loop exchanges temperature across coupled
+patches via \bctype{coupledTemperature} boundary conditions (standard
+OpenFOAM), and exchanges species concentration via the custom
+\bctype{sievertsCoupledMixed} or \bctype{surfaceRecombination} BCs described
+in §\ref{sec:bc}.  Both exchanges happen every PIMPLE outer corrector, so the
+fields remain thermodynamically consistent throughout the time step.
+
+% ============================================================
+\section{Material Models}
+\label{sec:mat}
+% ============================================================
+
+\subsection{Arrhenius temperature dependence}
+\label{sec:arrhenius}
+
+Every material property that depends on temperature follows the Arrhenius form.
+This applies uniformly to $D$, the solubility $K_s$, and the surface-kinetics
+coefficients $K_d$, $K_r$:
+
+\begin{tcolorbox}[eqbox,title={Arrhenius property}]
+\begin{equation}\label{eq:arrhenius}
+  X(T) \;=\; X_0 \;\exp\!\left(-\frac{E_a}{R\,T}\right)
+\end{equation}
+\end{tcolorbox}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Symbol & Meaning & Notes \\
+\midrule
+$X_0$  & Pre-exponential factor & Carries the SI units of $X$ \\
+$E_a$  & Activation energy      & $\J\,\mol^{-1}$ \\
+$R$    & Gas constant           & $8.314\,\J\,\mol^{-1}\,\K^{-1}$ \\
+$T$    & Local temperature      & $\K$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Setting $E_a = 0$ gives a temperature-independent constant, used in all
+isothermal tutorial cases.
+
+\textbf{Dictionary syntax} (applies to all Arrhenius properties):
+\begin{verbatim}
+    D { X0  [0 2 -1 0 0 0 0]  2.9e-7;   Ea  13800; }
+\end{verbatim}
+
+\begin{tcolorbox}[casebox]
+  \textbf{Isothermal ($E_a = 0$):} \caseref{case311}–\caseref{case315},
+  \caseref{case317}–\caseref{case319}, \caseref{case321}–\caseref{case322}.\\
+  \textbf{Arrhenius $D(T)$ active:} \caseref{case316} (D(T) for vapour
+  diffusion), \caseref{case319} (real $D(T)$ for WC and SS316),
+  \caseref{case320} (real $D(T)$ for SS316 wall at $T$ gradient from
+  FLiBe/Hitec).
+\end{tcolorbox}
+
+\subsection{Solubility laws}
+\label{sec:sol}
+
+\subsubsection{Sieverts' law (metals and interstitial solids)}
+
+Sieverts' law describes the equilibrium solubility of diatomic gases (H$_2$,
+D$_2$, T$_2$) that dissociate upon dissolution.  The dissolved concentration
+is proportional to the \emph{square root} of the gas partial pressure:
+
+\begin{tcolorbox}[eqbox,title={Sieverts' law}]
+\begin{equation}\label{eq:sieverts}
+  C \;=\; K_s(T)\;\sqrt{p}
+\end{equation}
+\end{tcolorbox}
+
+$K_s(T)\,[\mol\,\m^{-3}\,\Pa^{-1/2}]$ is the Sieverts solubility constant,
+following the Arrhenius form~\eqref{eq:arrhenius}.  Applicable materials
+include iron, stainless steel (SS316), tungsten, vanadium alloys, and palladium.
+
+\begin{tcolorbox}[casebox]
+  Used in: \caseref{case312}–\caseref{case314}, \caseref{case318}–\caseref{case320},
+  \caseref{case321} (metal layer), \caseref{case322}.
+\end{tcolorbox}
+
+\subsubsection{Henry's law (polymers, liquids, porous media)}
+
+For species that dissolve without dissociation (vapour in a polymer, dissolved
+gas in a liquid), the equilibrium concentration is proportional to pressure:
+
+\begin{tcolorbox}[eqbox,title={Henry's law}]
+\begin{equation}\label{eq:henry}
+  C \;=\; K_H(T)\;p
+\end{equation}
+\end{tcolorbox}
+
+$K_H(T)\,[\mol\,\m^{-3}\,\Pa^{-1}]$ is the Henry constant.  Applicable to
+dense polymer films, membrane distillation membranes, and organic solvents.
+
+\begin{tcolorbox}[casebox]
+  Used in: \caseref{case315}–\caseref{case316} (membrane distillation),
+  \caseref{case317} (reverse osmosis, $K_H = 0.5$ at the feed/membrane
+  interface), \caseref{case321} (polymer layer).
+\end{tcolorbox}
+
+\subsection{McNabb--Foster trapping kinetics}
+\label{sec:trap}
+
+In metals, hydrogen isotopes can occupy lattice defects (vacancies,
+dislocations, grain boundaries).  The McNabb--Foster model~\cite{McNabb1963}
+treats a single population of trap sites with density
+$n_t = f_t N\,[\mol\,\m^{-3}]$:
+
+\begin{tcolorbox}[eqbox,title={McNabb--Foster ODE}]
+\begin{equation}\label{eq:trap}
+  \pder{C_t}{t}
+  \;=\;
+  \frac{\alpha_t}{N}\,C\,(n_t - C_t)
+  \;-\;
+  \alpha_d(T)\,C_t
+\end{equation}
+\end{tcolorbox}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Symbol & Meaning & Units \\
+\midrule
+$N$      & Molar trap-site density               & $\mol\,\m^{-3}$ \\
+$f_t$    & Trap fraction ($0 < f_t \le 1$)        & --- \\
+$n_t = f_t N$ & Available trap-site density      & $\mol\,\m^{-3}$ \\
+$\alpha_t$ & Trapping rate coefficient             & $\s^{-1}$ \\
+$\alpha_d(T) = \alpha_{d0}\exp(-\varepsilon/k_B T)$ & Detrapping rate & $\s^{-1}$ \\
+$\varepsilon$ & Trap binding energy               & eV \\
+$k_B$    & Boltzmann constant                     & $\J\,\K^{-1}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The trapping term $\partial C_t/\partial t$ is subtracted from the mobile
+species equation~\eqref{eq:species} as a sink.
+
+\subsubsection{Trapping regimes}
+
+Two limiting regimes exist depending on the ratio of trapping to diffusion time scales:
+
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{Weak trapping} ($\alpha_t / D \ll 1$): traps fill slowly; the
+        mobile front propagates at nearly the bare diffusion speed; breakthrough
+        time $\approx L^2/D$.
+  \item \textbf{Strong trapping} ($\alpha_t / D \gg 1$): most atoms are trapped;
+        effective diffusivity $D_\text{eff} = D/(1 + N_t\,\alpha_t)$ is greatly
+        reduced; breakthrough is delayed by orders of magnitude.
+\end{itemize}
+
+\subsubsection{Numerical discretisation of the trapping ODE}
+
+The ODE~\eqref{eq:trap} is stiff and must be discretised carefully to remain
+bounded ($0 \le C_t \le n_t$).  A per-cell semi-implicit Euler step is used:
+
+\begin{tcolorbox}[eqbox,title={Semi-implicit Euler for trapping ODE}]
+\begin{equation}\label{eq:trap_euler}
+  C_t^{n+1}
+  \;=\;
+  \frac{C_t^n \;+\; \Delta t\,\dfrac{\alpha_t}{N}\,C\,n_t}
+       {1 \;+\; \Delta t\!\left(\dfrac{\alpha_t}{N}\,C \;+\; \alpha_d\right)}
+\end{equation}
+\end{tcolorbox}
+
+This scheme is unconditionally stable and guarantees $0 \le C_t^{n+1} \le n_t$
+for any time step.
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case313}.
+  Two sub-cases span the weak and strong trapping regimes.  The analytical
+  breakthrough time is used to validate both limits.
+\end{tcolorbox}
+
+% ============================================================
+\section{Interface and Surface Boundary Conditions}
+\label{sec:bc}
+% ============================================================
+
+\subsection{Overview}
+
+At every coupled patch, two physical conditions must hold simultaneously:
+
+\begin{enumerate}[itemsep=2pt]
+  \item \textbf{Flux continuity:}
+        $D_A\,(\partial C_A/\partial n)_\text{face} =
+         D_B\,(\partial C_B/\partial n)_\text{face}$
+  \item \textbf{Thermodynamic equilibrium:} determined by the solubility
+        law on each side (§\ref{sec:sol}).
+\end{enumerate}
+
+These are implemented as a \emph{mixed} (Robin) boundary condition in
+OpenFOAM, derived from the conjugate heat-transfer analogy.
+
+\subsection{Sieverts--Sieverts interface (linear partition)}
+\label{sec:bc_linear}
+
+When both sides follow Sieverts' law, the equilibrium condition at the
+interface face is:
+
+\begin{tcolorbox}[eqbox,title={Sieverts--Sieverts partition (\texttt{partition linear})}]
+\begin{equation}\label{eq:linear_part}
+  \frac{C_A}{K_{s,A}} \;=\; \frac{C_B}{K_{s,B}}
+  \qquad\Longleftrightarrow\qquad
+  C_A \;=\; \frac{K_{s,A}}{K_{s,B}}\,C_B
+\end{equation}
+\end{tcolorbox}
+
+The concentration ratio $K_{s,A}/K_{s,B}$ can be greater or less than unity,
+producing a concentration jump at the interface even in steady state.  When
+$K_{s,A} = K_{s,B}$, the concentration is continuous.
+
+\textbf{Mixed-BC coefficients} (self = region $A$, neighbour = region $B$):
+\begin{align}
+  \text{refValue} &= \frac{K_{s,A}}{K_{s,B}}\,C_{B,\text{cell}} \notag\\
+  w &= \frac{D_B\,\delta_B^{-1}}{D_B\,\delta_B^{-1} + D_A\,\delta_A^{-1}(K_{s,A}/K_{s,B})} \label{eq:weight_linear}\\
+  C_{A,\text{face}} &= w\cdot\text{refValue} + (1-w)\,C_{A,\text{cell}} \notag
+\end{align}
+where $\delta^{-1}$ is the distance from the cell centre to the interface face.
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case314} (two-layer composite membrane,
+  $K_s$ ratio $= 4$; interface concentration jump of factor 4 at steady state),
+  \caseref{case318} (code-to-code benchmark, equal $K_s$, continuous profile),
+  \caseref{case319} (WC/SS316 barrier, large $K_s$ ratio responsible for PRF),
+  \caseref{case320} (SS316 wall; also \caseref{case321} reference sub-case).
+\end{tcolorbox}
+
+\subsection{Henry--Sieverts interface (nonlinear partition)}
+\label{sec:bc_nonlinear}
+
+When a Henry-law material (polymer, liquid) interfaces with a Sieverts-law
+material (metal), the same partial pressure $p_\text{int}$ must hold on both
+sides:
+\[
+  p_\text{int} = \frac{C_\text{Henry}}{K_H} = \left(\frac{C_\text{Sieverts}}{K_s}\right)^{\!2}
+\]
+
+This gives two equivalent partition conditions depending on which side is
+considered ``self'':
+
+\begin{tcolorbox}[eqbox,title={Henry--Sieverts partition}]
+\begin{align}
+  \label{eq:sqrt_part}
+  \text{Sieverts side (\texttt{partition sqrt}):} \quad
+  &C_\text{Sieverts} = K_s \sqrt{\dfrac{C_\text{Henry}}{K_H}}\\[4pt]
+  \label{eq:quad_part}
+  \text{Henry side (\texttt{partition quadratic}):} \quad
+  &C_\text{Henry} = K_H \left(\dfrac{C_\text{Sieverts}}{K_s}\right)^{\!2}
+\end{align}
+\end{tcolorbox}
+
+Both sides must be set consistently in the \texttt{0/} boundary field files;
+they encode the same physics from opposite perspectives.
+
+\textbf{Linearised mixed-BC weight} for the nonlinear cases.
+The weight~\eqref{eq:weight_linear} is derived by linearising the partition
+function at the current Picard iterate.  For the \texttt{sqrt} mode
+(self = Sieverts, neighbour = Henry):
+\begin{equation}\label{eq:weight_sqrt}
+  \frac{\mathrm{d}C_s}{\mathrm{d}C_n}\bigg|_\text{iterate}
+  = \frac{C_{s,\text{face}}}{2\,C_{n,\text{cell}}}
+  \qquad\Rightarrow\qquad
+  \text{selfKD} = D_A\,\delta_A^{-1}\;\frac{C_{A,\text{face}}}{2\,C_{B,\text{cell}}}
+\end{equation}
+
+Using the linearised derivative (rather than the constant $K_s/K_H$) in the
+weight formula ensures that flux continuity is enforced exactly at every
+Picard step, even in steady state on a coarse mesh.
+
+\subsubsection{Steady-state interface concentrations}
+
+For the case of equal layer thicknesses $L$, equal diffusivities $D$, inlet
+concentration $C_0 = 1\,\mol\,\m^{-3}$, and $K_s = K_H = 1$:
+
+\begin{tcolorbox}[eqbox,title={Analytical interface concentrations (equal $D$, $L$, $K$)}]
+\begin{equation}\label{eq:hs_ss}
+  u^2 + u = 1,
+  \quad u = C_{\text{Sieverts,int}},
+  \qquad\Rightarrow\qquad
+  u = \tfrac{\sqrt{5}-1}{2} \approx 0.618\,\mol\,\m^{-3}
+\end{equation}
+\end{tcolorbox}
+
+The \emph{golden-ratio conjugate} $(\sqrt5-1)/2$ appears naturally because
+the steady-state flux equality combined with the $\sqrt{\cdot}$ partition gives
+exactly the quadratic $u^2+u-1=0$.  The Henry (polymer) side holds
+$C_\text{Henry,int} = u^2 \approx 0.382\,\mol\,\m^{-3}$, demonstrating that the
+\emph{concentration is discontinuous and higher on the Sieverts (metal) side}
+— the defining signature of this partition law.
+
+The steady-state flux in the Henry--Sieverts case is 23.6\,\% \emph{higher}
+than the equivalent Sieverts--Sieverts case with the same $D$, $L$, and $K$:
+\begin{equation}\label{eq:hs_flux}
+  J_\text{HS} = D\,\frac{C_\text{Sieverts,int}}{L}
+  = \frac{(\sqrt{5}-1)/2}{L/D}\,C_0
+  \;\approx\; 1.236\;J_\text{SS}
+\end{equation}
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case321}.
+  Two sub-cases (\texttt{sieverts\_sieverts} reference and
+  \texttt{henry\_sieverts}) run with identical $D$, $L$, boundary values;
+  the 23.6\,\% flux difference is confirmed analytically and numerically.
+\end{tcolorbox}
+
+\subsection{Surface recombination and dissociation}
+\label{sec:bc_recomb}
+
+At a free metal surface exposed to a molecular gas, two kinetic processes
+compete:
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Dissociative absorption:} & H$_2 \to 2$H,\quad $\text{flux} = K_d(T)\,p_\text{gas}$ \\
+\textbf{Recombinative desorption:} & $2\text{H} \to \text{H}_2$,\quad $\text{flux} = K_r(T)\,C^2$ \\
+\end{tabular}
+\end{center}
+
+The net flux into the solid is the \emph{surface recombination Robin BC}:
+
+\begin{tcolorbox}[eqbox,title={Surface recombination BC (\texttt{surfaceRecombination})}]
+\begin{equation}\label{eq:recomb}
+  D\,\pder{C}{n}
+  \;=\;
+  K_d(T)\;p_\text{gas}
+  \;-\;
+  K_r(T)\;C^2
+\end{equation}
+\end{tcolorbox}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Symbol & Meaning & Units \\
+\midrule
+$K_d(T)$ & Dissociation rate (Arrhenius) & $\mol\,\m^{-2}\,\s^{-1}\,\Pa^{-1}$ \\
+$K_r(T)$ & Recombination rate (Arrhenius) & $\m^4\,\mol^{-1}\,\s^{-1}$ \\
+$p_\text{gas}$ & Gas-phase partial pressure & $\Pa$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Both $K_d$ and $K_r$ follow the Arrhenius form~\eqref{eq:arrhenius}.
+Setting $p_\text{gas} = 0$ models a vacuum or purge side (pure desorption).
+
+\subsubsection{Equilibrium and Sieverts limit}
+
+At equilibrium (zero net flux), $C = C_\text{eq}$:
+\begin{equation}\label{eq:Ceq}
+  K_d\,p_\text{gas} = K_r\,C_\text{eq}^2
+  \qquad\Rightarrow\qquad
+  C_\text{eq} = \sqrt{\frac{K_d\,p_\text{gas}}{K_r}}
+\end{equation}
+
+This is exactly Sieverts' law~\eqref{eq:sieverts} with $K_s = \sqrt{K_d/K_r}$:
+\emph{the surface recombination BC generalises the Sieverts equilibrium BC and
+recovers it in the fast-kinetics limit}.
+
+\subsubsection{Damköhler number}
+
+The Damköhler number compares the surface-kinetics rate to the bulk-diffusion
+rate:
+
+\begin{tcolorbox}[eqbox,title={Damköhler number}]
+\begin{equation}\label{eq:Da}
+  \Da
+  \;=\;
+  \frac{K_r\,C_\text{eq}\,L}{D}
+\end{equation}
+\end{tcolorbox}
+
+\begin{center}
+\begin{tabular}{cll}
+\toprule
+$\Da$ & Limiting step & Surface concentration \\
+\midrule
+$\Da \gg 1$ & Diffusion-limited & $C_s \approx C_\text{eq}$ (Sieverts equilibrium) \\
+$\Da \approx 1$ & Mixed control & $C_s = \tfrac{\sqrt{5}-1}{2}\,C_\text{eq}$ (see below) \\
+$\Da \ll 1$ & Kinetically limited & $C_s \ll C_\text{eq}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Steady-state surface concentration}
+
+At steady state, the Robin condition~\eqref{eq:recomb} must equal the
+permeation flux $D\,C_s/L$ (assuming zero concentration at the purge face):
+\begin{equation}\label{eq:recomb_ss}
+  K_r\,C_s^2 + \frac{D}{L}\,C_s - K_d\,p_\text{gas} = 0
+\end{equation}
+
+The physical (positive) root is:
+\begin{tcolorbox}[eqbox,title={Steady-state surface concentration (general Da)}]
+\begin{equation}\label{eq:Cs_general}
+  C_s
+  \;=\;
+  \frac{-D/L + \sqrt{(D/L)^2 + 4\,K_r\,K_d\,p_\text{gas}}}{2\,K_r}
+\end{equation}
+\end{tcolorbox}
+
+\textbf{Special case $\Da = 1$} (with $K_d = K_r$, $p_\text{gas} = 1$,
+$D/L = K_r\,C_\text{eq} = K_r$):
+\begin{equation}\label{eq:Cs_Da1}
+  C_s^2 + C_s - 1 = 0
+  \qquad\Rightarrow\qquad
+  C_s = \tfrac{\sqrt{5}-1}{2} \approx 0.618\,\mol\,\m^{-3}
+\end{equation}
+
+The golden-ratio conjugate appears again.  The flux is reduced by 38.2\,\%
+relative to the Sieverts equilibrium limit:
+\begin{equation}\label{eq:flux_Da1}
+  \frac{J_\text{surf}}{J_\text{ref}} = \frac{C_s}{C_\text{eq}} = \frac{\sqrt{5}-1}{2}
+  \approx 0.618
+\end{equation}
+
+\textbf{Numerical treatment.}
+The $C^2$ term is Picard-frozen at the previous cell concentration,
+making the gradient a simple field evaluation each PIMPLE outer iteration.
+Convergence is guaranteed by the PIMPLE outer loop.
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case322}.
+  Sub-case \texttt{sieverts\_bc} provides the $\Da \to \infty$ reference
+  ($J_\text{ref}$); sub-case \texttt{surface\_recombination} runs $\Da = 1$
+  and confirms $C_s = (\sqrt5-1)/2$ and the 38.2\,\% flux reduction.
+\end{tcolorbox}
+
+% ============================================================
+\section{Performance Metrics}
+\label{sec:metrics}
+% ============================================================
+
+\subsection{Permeation flux and speciesFlux function object}
+\label{sec:flux_fo}
+
+The area-integrated molar permeation flux through a patch is:
+
+\begin{tcolorbox}[eqbox,title={Surface molar flux}]
+\begin{equation}\label{eq:J}
+  J_\text{patch}
+  \;=\;
+  -\!\int_\text{patch} D\,\nabla C \cdot \hat{n}\;\mathrm{d}A
+  \qquad [\mol\,\s^{-1}]
+\end{equation}
+\end{tcolorbox}
+
+The \texttt{speciesFlux} function object evaluates this integral at every
+write time without modifying the solver.  It outputs both the area-averaged
+flux density $[\mol\,\m^{-2}\,\s^{-1}]$ and the total flux $[\mol\,\s^{-1}]$
+to \texttt{postProcessing/<name>/<time>/speciesFlux.dat}.
+
+The diffusivity field \texttt{D\_<species>} is registered as
+\texttt{AUTO\_WRITE} by the \texttt{speciesModel}, making it available to
+the function object at every write time.
+
+\textbf{Dictionary syntax:}
+\begin{verbatim}
+functions
+{
+    wallPermeation
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      wall;
+        species     C_H2;
+        patches     (wall_to_hitec);
+        writeControl writeTime;
+    }
+}
+\end{verbatim}
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case320}
+  (permeation flux through SS316 wall into Hitec coolant),
+  \caseref{case321}, \caseref{case322} (permeation flux at purge face).
+\end{tcolorbox}
+
+\subsection{Permeation reduction factor}
+\label{sec:prf}
+
+The permeation reduction factor (PRF) quantifies the effectiveness of a
+barrier coating:
+
+\begin{tcolorbox}[eqbox,title={Permeation reduction factor}]
+\begin{equation}\label{eq:prf}
+  \mathrm{PRF}
+  \;=\;
+  \frac{J_\text{without barrier}}{J_\text{with barrier}}
+  \;=\;
+  \frac{C_0/R_\text{total,bare}}{C_0/R_\text{total,coated}}
+\end{equation}
+\end{tcolorbox}
+
+For a two-layer composite (coating thickness $L_c$, substrate thickness
+$L_s$) with equal $K_s$ on both sides, the steady-state PRF can be
+approximated by the ratio of total diffusion resistances.  High PRF arises
+when the coating has a much larger $K_s/D$ ratio (lower permeability) than
+the substrate.
+
+The permeability of a material is $\Phi = K_s^2 D$ (in
+$[\mol\,\m^{-1}\,\s^{-1}\,\Pa^{-1}]$, the Richardson--Dushman formula for
+diatomic gases).
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case319}.
+  A tungsten carbide (WC) coating on SS316 at $T = 1073\,\K$:
+  \[
+    \mathrm{PRF} \approx 200
+  \]
+  confirmed by comparing the \texttt{with\_coating} and \texttt{no\_coating}
+  sub-cases.  The PRF is dominated by the large $K_s$ ratio ($K_{s,\text{WC}} \gg
+  K_{s,\text{SS316}}$), which lowers the dissolved concentration in the coating
+  and therefore reduces the flux into the substrate.
+\end{tcolorbox}
+
+% ============================================================
+\section{Numerical Implementation}
+\label{sec:num}
+% ============================================================
+
+\subsection{Finite-volume discretisation}
+
+The species equation~\eqref{eq:species} is discretised using the
+standard OpenFOAM finite-volume method on an unstructured collocated mesh:
+
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{Time integration:} first-order implicit Euler
+        (\texttt{ddtSchemes: Euler}).
+  \item \textbf{Diffusion:} second-order Gauss linear with explicit non-orthogonal
+        correction (\texttt{laplacianSchemes: Gauss linear corrected}).
+  \item \textbf{Gradient:} Gauss linear (\texttt{gradSchemes: Gauss linear}).
+\end{itemize}
+
+These settings are appropriate for diffusion-dominated transport on
+orthogonal structured meshes (all tutorial cases use 1-D block meshes).
+
+\subsection{PIMPLE outer loop and Picard convergence}
+\label{sec:pimple}
+
+The nonlinear boundary conditions (\texttt{quadratic}, \texttt{sqrt},
+\texttt{surfaceRecombination}) are linearised by Picard (fixed-point)
+iteration within the PIMPLE outer corrector loop:
+
+\begin{enumerate}[itemsep=2pt]
+  \item \textbf{Outer iteration $k$:} the nonlinear BC evaluates the
+        interface condition using cell values from iteration $k-1$ (frozen
+        coefficients).
+  \item \textbf{Species equation:} assembled and solved with the frozen
+        coefficients; cell values are updated.
+  \item \textbf{Convergence check:} if the species residual $< \varepsilon$
+        (\texttt{residualControl}), the outer loop exits; otherwise another
+        outer iteration is performed.
+\end{enumerate}
+
+The mixed-BC weight~\eqref{eq:weight_sqrt} uses the \emph{linearised
+derivative} of the partition function evaluated at the current iterate,
+ensuring that flux continuity is enforced at every Picard step and that the
+method converges to the exact partition condition as $k \to \infty$.
+
+\subsection{Coupled-patch data exchange}
+
+At each outer PIMPLE iteration, the coupled patches exchange:
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{Neighbour cell concentration} $C_{n,\text{cell}}$
+        (used to evaluate the partition refValue),
+  \item \textbf{Neighbour diffusivity} $D_n$ and
+        \textbf{inverse distance} $\delta_n^{-1}$
+        (used to evaluate $\text{nbrKD}$ for the weight).
+\end{itemize}
+Data exchange uses OpenFOAM's mapped-patch infrastructure with an incremented
+MPI message tag to avoid collisions when multiple coupled fields are
+exchanged in the same iteration.
+
+\subsection{Semi-implicit trapping ODE}
+
+The McNabb--Foster ODE~\eqref{eq:trap} is solved \emph{cell by cell} with the
+per-cell semi-implicit Euler update~\eqref{eq:trap_euler}.  This is performed
+explicitly before the species equation assembly, so the sink term
+$\partial C_t/\partial t$ is available for the right-hand side.  No global
+matrix inversion is required for the ODE update.
+
+\subsection{Library architecture}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Library & Purpose & Key classes \\
+\midrule
+\texttt{libspeciesTransport.so} & Core physics & \texttt{speciesModel}, \texttt{arrheniusProperty},\\
+& & \texttt{McNabbFoster}, \texttt{noTrapping} \\
+\texttt{libspeciesCoupling.so} & Boundary conditions & \texttt{sievertsCoupledMixed},\\
+& & \texttt{surfaceRecombination} \\
+\texttt{libspeciesSolid.so} & Solver module & \texttt{speciesSolid} \\
+\texttt{libspeciesPost.so} & Post-processing & \texttt{speciesFlux} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All libraries must be listed in \texttt{system/controlDict}:
+\begin{verbatim}
+libs ("libspeciesTransport.so" "libspeciesCoupling.so"
+      "libspeciesSolid.so"    "libspeciesPost.so");
+\end{verbatim}
+
+% ============================================================
+\section{Tutorial Guide}
+\label{sec:tutorials}
+% ============================================================
+
+The twelve tutorial cases are ordered by increasing physical complexity.
+Each case contains an \texttt{Allrun} script, an \texttt{Allclean} script,
+a per-case \texttt{README.md}, and a Python validation script that compares
+the simulation output to an analytical or benchmark solution.
+
+\subsection{Case summary table}
+
+\begin{table}[htbp]
+\centering
+\caption{Tutorial cases and the physics they demonstrate.}
+\label{tab:cases}
+\small
+\begin{tabularx}{\linewidth}{llX}
+\toprule
+Case & Solver & Physics / Key feature \\
+\midrule
+\caseref{case311} & \texttt{solid} &
+  Pure 1-D diffusion, step BC.
+  Uses temperature field as species proxy.
+  Validates erfc front propagation (exact analytical solution). \\[2pt]
+
+\caseref{case312} & \texttt{speciesSolid} &
+  1-D diffusion, non-uniform initial condition (\texttt{setFields}).
+  Fourier cosine series analytical solution.
+  First use of the species equation. \\[2pt]
+
+\caseref{case313} & \texttt{speciesSolid} &
+  McNabb--Foster trapping (§\ref{sec:trap}).
+  Two sub-cases: weak trapping ($\alpha_t/D \ll 1$) and strong trapping
+  ($\alpha_t/D \gg 1$).
+  Validates semi-implicit ODE~\eqref{eq:trap_euler}. \\[2pt]
+
+\caseref{case314} & \texttt{speciesSolid} &
+  Two-region composite membrane; Sieverts--Sieverts linear partition
+  (§\ref{sec:bc_linear}) with $K_{s,A}/K_{s,B} = 4$.
+  Validates concentration jump at the interface. \\[2pt]
+
+\caseref{case315} & \texttt{speciesSolid} &
+  Isothermal membrane distillation.
+  Henry-law solubility (§\ref{sec:sol}), constant $D$.
+  Linear steady-state profile. \\[2pt]
+
+\caseref{case316} & \texttt{speciesSolid} &
+  Membrane distillation with Arrhenius $D(T)$ (§\ref{sec:arrhenius}).
+  Temperature gradient drives non-linear steady-state profile.
+  Full energy--species coupling active. \\[2pt]
+
+\caseref{case317} & \texttt{speciesSolid} &
+  Reverse osmosis: two-region feed/membrane.
+  Henry partition at the feed face ($K_H = 0.5$).
+  Solution-diffusion model. \\[2pt]
+
+\caseref{case318} & \texttt{speciesSolid} &
+  Code-to-code benchmark against Pasler et al.\ and Fourier sine series.
+  Constant BCs; transient diffusion with exact analytical solution. \\[2pt]
+
+\caseref{case319} & \texttt{speciesSolid} &
+  WC coating + SS316 substrate; real Arrhenius $D(T)$ for both materials.
+  Linear partition (\eqref{eq:linear_part}).
+  PRF $\approx 200$ (§\ref{sec:prf}).
+  Two sub-cases: \texttt{with\_coating} / \texttt{no\_coating}. \\[2pt]
+
+\caseref{case320} & \texttt{speciesSolid} &
+  Three-region shell-and-tube heat exchanger: FLiBe (shell) $|$ SS316 (wall)
+  $|$ Hitec (tube).
+  Full conjugate heat transfer + species permeation through the wall.
+  Arrhenius $D(T)$ from $T$ gradient through wall.
+  \texttt{speciesFlux} function object measures $J$ through the wall. \\[2pt]
+
+\caseref{case321} & \texttt{speciesSolid} &
+  Henry--Sieverts partition (§\ref{sec:bc_nonlinear}, §\ref{sec:bc_linear}).
+  Two sub-cases: \texttt{sieverts\_sieverts} (reference) and
+  \texttt{henry\_sieverts} (sqrt/quadratic BC).
+  Validates 23.6\,\% flux increase and interface concentration jump.
+  Golden-ratio interface concentration~\eqref{eq:hs_ss}. \\[2pt]
+
+\caseref{case322} & \texttt{speciesSolid} &
+  Surface recombination/dissociation (§\ref{sec:bc_recomb}).
+  Two sub-cases: \texttt{sieverts\_bc} ($\Da \to \infty$ reference) and
+  \texttt{surface\_recombination} ($\Da = 1$).
+  Validates golden-ratio surface concentration~\eqref{eq:Cs_Da1} and
+  38.2\,\% flux reduction. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Physics-to-tutorial cross-reference}
+
+\begin{table}[htbp]
+\centering
+\caption{Which tutorials exercise which physical models.}
+\label{tab:cross}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lcccccccccccc}
+\toprule
+Physical model &
+\rotatebox{75}{\caseref{311}} & \rotatebox{75}{\caseref{312}} &
+\rotatebox{75}{\caseref{313}} & \rotatebox{75}{\caseref{314}} &
+\rotatebox{75}{\caseref{315}} & \rotatebox{75}{\caseref{316}} &
+\rotatebox{75}{\caseref{317}} & \rotatebox{75}{\caseref{318}} &
+\rotatebox{75}{\caseref{319}} & \rotatebox{75}{\caseref{320}} &
+\rotatebox{75}{\caseref{321}} & \rotatebox{75}{\caseref{322}} \\
+\midrule
+Species diffusion eq.~\eqref{eq:species}
+  & \checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+Energy eq.~\eqref{eq:energy}
+  & \checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+Arrhenius~\eqref{eq:arrhenius}
+  & & & & & & \checkmark& & &\checkmark&\checkmark& & \\
+Sieverts law~\eqref{eq:sieverts}
+  & & &\checkmark&\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+Henry law~\eqref{eq:henry}
+  & & & & &\checkmark&\checkmark&\checkmark& & & &\checkmark& \\
+McNabb--Foster~\eqref{eq:trap}
+  & & &\checkmark& & & & & & & & & \\
+Linear partition~\eqref{eq:linear_part}
+  & & & &\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark& \\
+Sqrt partition~\eqref{eq:sqrt_part}
+  & & & & & & & & & & &\checkmark& \\
+Quadratic partition~\eqref{eq:quad_part}
+  & & & & & & &\checkmark& & & &\checkmark& \\
+Surface recombination~\eqref{eq:recomb}
+  & & & & & & & & & & & &\checkmark \\
+PRF metric~\eqref{eq:prf}
+  & & & & & & & & &\checkmark& & & \\
+speciesFlux FO~\eqref{eq:J}
+  & & & & & & & & & &\checkmark&\checkmark&\checkmark \\
+Multi-region ($\geq 3$ regions)
+  & & & & & & & & & &\checkmark& & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Running the tutorials}
+
+\textbf{Prerequisites.} Source OpenFOAM-13 and build the libraries:
+\begin{verbatim}
+source /opt/openfoam13/etc/bashrc
+cd $WM_PROJECT_USER_DIR/multiSpeciesRegionFoam
+./Allwmake 2>&1 | tee build.log
+\end{verbatim}
+
+\textbf{Individual case:}
+\begin{verbatim}
+cd tutorials/case314-composite-membrane
+./Allrun
+python3 validation/membrane_compare.py --plot
+\end{verbatim}
+
+\textbf{Validation exit code:} each validation script exits 0 on
+\textsc{pass} (flux within 5\,\% of analytical) and 1 on \textsc{fail}.
+
+\newpage
+% ============================================================
+\section{Notation Summary}
+\label{sec:notation}
+% ============================================================
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Symbol & Meaning & SI units \\
+\midrule
+$C$               & Mobile species concentration       & $\mol\,\m^{-3}$ \\
+$C_t$             & Trapped concentration               & $\mol\,\m^{-3}$ \\
+$D(T)$            & Diffusivity (Arrhenius)              & $\m^2\,\s^{-1}$ \\
+$E_a$             & Activation energy                   & $\J\,\mol^{-1}$ \\
+$f_t$             & Trap fraction                        & --- \\
+$J$               & Molar flux (area-averaged)           & $\mol\,\m^{-2}\,\s^{-1}$ \\
+$K_d(T)$          & Dissociation rate                   & $\mol\,\m^{-2}\,\s^{-1}\,\Pa^{-1}$ \\
+$K_H(T)$          & Henry solubility constant            & $\mol\,\m^{-3}\,\Pa^{-1}$ \\
+$K_r(T)$          & Recombination rate                  & $\m^4\,\mol^{-1}\,\s^{-1}$ \\
+$K_s(T)$          & Sieverts solubility constant         & $\mol\,\m^{-3}\,\Pa^{-1/2}$ \\
+$L$               & Layer thickness                      & $\m$ \\
+$N$               & Molar trap-site density              & $\mol\,\m^{-3}$ \\
+$n_t = f_t N$     & Available trap density               & $\mol\,\m^{-3}$ \\
+$p$               & Gas-phase partial pressure           & $\Pa$ \\
+$R$               & Gas constant ($8.314$)               & $\J\,\mol^{-1}\,\K^{-1}$ \\
+$S_\text{vol}$    & Volumetric species source            & $\mol\,\m^{-3}\,\s^{-1}$ \\
+$T$               & Temperature                          & $\K$ \\
+$w$               & Mixed-BC value fraction              & --- \\
+$X_0$             & Arrhenius pre-exponential factor     & (same as $X$) \\
+$\alpha_d(T)$     & Detrapping rate                     & $\s^{-1}$ \\
+$\alpha_t$        & Trapping rate                       & $\s^{-1}$ \\
+$\delta^{-1}$     & Cell-centre to face distance (inv.) & $\m^{-1}$ \\
+$\varepsilon$     & Trap binding energy                  & eV \\
+$\kappa(T)$       & Thermal conductivity                 & $\W\,\m^{-1}\,\K^{-1}$ \\
+$\Phi = K_s^2 D$  & Permeability (diatomic gas)          & $\mol\,\m^{-1}\,\s^{-1}\,\Pa^{-1}$ \\
+$\Da$             & Damköhler number (surface kinetics) & --- \\
+$\mathrm{PRF}$    & Permeation reduction factor          & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ============================================================
+\section*{References}
+% ============================================================
+\addcontentsline{toc}{section}{References}
+
+\begin{enumerate}[label={[\arabic*]},itemsep=2pt]
+  \item Hattab, N., Siriano, S., Giannetti, F.
+        \textit{An OpenFOAM multi-region solver for tritium transport modeling
+        in fusion systems.}
+        Fusion Engineering and Design \textbf{202} (2024) 114362.
+
+  \item McNabb, A., Foster, P.\,K.
+        \textit{A new analysis of the diffusion of hydrogen in iron and ferritic
+        steels.}
+        Trans.\ Metall.\ Soc.\ AIME \textbf{227} (1963) 618--627.
+
+  \item Pick, M.\,A., Sonnenberg, K.
+        \textit{A model for atomic hydrogen-metal interactions — application to
+        recycling, recombination and permeation.}
+        J.\ Nucl.\ Mater.\ \textbf{131} (1985) 208--220.
+
+  \item Anderl, R.\,A.\ et al.
+        \textit{Hydrogen transport behavior of metal coatings for plasma-facing
+        components.}
+        J.\ Nucl.\ Mater.\ \textbf{196--198} (1992) 986--991.
+
+  \item Baker, R.\,W.
+        \textit{Membrane Technology and Applications}, 3rd ed.
+        Wiley, 2012. Ch.\ 8 (solution-diffusion model).
+
+  \item Ockwig, N.\,W., Nenoff, T.\,M.
+        \textit{Membranes for hydrogen separation.}
+        Chem.\ Rev.\ \textbf{107} (2007) 4078--4110.
+
+  \item CFD Direct.
+        \textit{Modular Solvers in OpenFOAM.}
+        \url{https://cfd.direct/openfoam/free-software/modular-solvers/}
+\end{enumerate}
+
+\end{document}

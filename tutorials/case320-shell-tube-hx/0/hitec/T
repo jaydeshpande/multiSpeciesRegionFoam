@@ -1,0 +1,45 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/hitec";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hitec secondary salt temperature at 673 K (400°C).
+// The outer fixedValue represents the bulk secondary coolant temperature
+// maintained by the heat sink (power block or process heat user).
+// The inner face (hitec_to_wall) couples to the SS316 wall.
+// Thermal τ ≈ 0.05 s — temperature reaches steady state within first step.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 673;
+
+boundaryField
+{
+    hitec_to_wall
+    {
+        type        coupledTemperature;
+        value       uniform 907;
+    }
+
+    hitec_right
+    {
+        type        fixedValue;
+        value       uniform 673;    // K — Hitec bulk temperature
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

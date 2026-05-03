@@ -1,0 +1,54 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / sieverts_sieverts / metal
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/metal";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Metal (Sieverts, reference case).
+// Right BC: C = 0 (purge side).
+// Interface (metal_to_polymer): linear partition, Ks = KsNbr = 1.0.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    metal_to_polymer
+    {
+        type        sievertsCoupledMixed;
+        partition   linear;             // Sieverts-Sieverts: C_B = (Ks_B/Ks_A)*C_A
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // self (metal) Sieverts constant
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // nbr (polymer) Sieverts constant
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    metal_right
+    {
+        type        fixedValue;
+        value       uniform 0;          // purge side: C = 0
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

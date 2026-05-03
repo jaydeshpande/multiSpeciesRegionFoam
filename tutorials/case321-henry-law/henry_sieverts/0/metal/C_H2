@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / henry_sieverts / metal
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/metal";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Metal (Sieverts regime).
+// Right BC: C = 0 (purge side).
+//
+// Interface (metal_to_polymer): partition SQRT
+//   C_metal = Ks_metal * sqrt(C_polymer / KH)
+//   Ks (self, metal) = Ks_metal = 1.0
+//   KsNbr (polymer) = KH = 1.0
+//
+// Analytical steady-state interface concentrations (equal D, equal L):
+//   C_metal,int ≈ (-1 + sqrt(5))/2 ≈ 0.618  mol/m³
+//   C_polymer,int = C_metal,int² ≈ 0.382     mol/m³
+//
+// Note: C_metal > C_polymer at the interface!  At the same partial pressure
+// p_int ≈ 0.382 Pa, the Sieverts metal holds C=0.618 while the Henry polymer
+// holds C=0.382.  This is the defining feature of Henry's-law partitioning.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    metal_to_polymer
+    {
+        type        sievertsCoupledMixed;
+        partition   sqrt;               // Sieverts self: C_B = Ks_B*sqrt(C_A/KH)
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // Ks_metal (Sieverts constant)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // KH (Henry constant of polymer)
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    metal_right
+    {
+        type        fixedValue;
+        value       uniform 0;          // purge side: C = 0
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

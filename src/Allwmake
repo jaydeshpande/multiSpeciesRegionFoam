@@ -9,3 +9,4 @@ cd "${0%/*}" || exit 1
 wmake speciesTransport
 wmake speciesCoupling
 wmake speciesSolid
+wmake speciesPost

@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case322-surface-recombination / sieverts_bc / metal
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/metal";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Metal slab: D = 5e-11 m²/s (representative of SS316 near 500 K).
+// Temperature-independent (Ea = 0) for this isothermal test.
+// Ks not used at the left BC (fixedValue), included for completeness.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 5e-11;  // m²/s
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1.0;
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

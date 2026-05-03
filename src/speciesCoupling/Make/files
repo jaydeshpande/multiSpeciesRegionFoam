@@ -1,4 +1,5 @@
 speciesCoupledMixedFvPatchScalarField/speciesCoupledMixedFvPatchScalarField.C
 sievertsCoupledMixedFvPatchScalarField/sievertsCoupledMixedFvPatchScalarField.C
+surfaceRecombinationFvPatchScalarField/surfaceRecombinationFvPatchScalarField.C
 
 LIB = $(FOAM_USER_LIBBIN)/libspeciesCoupling

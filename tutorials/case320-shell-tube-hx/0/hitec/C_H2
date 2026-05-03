@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/hitec";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in Hitec secondary salt.
+//
+// Outer BC (hitec_right, fixedValue 0):
+//   Represents continuous hydrogen removal from the secondary loop by a
+//   purge gas stream or catalytic recombiner, maintaining the bulk Hitec
+//   at zero dissolved-H activity.  This maximises the permeation driving
+//   force and gives the worst-case (maximum) permeation flux through the wall.
+//
+// IC: Hitec initially hydrogen-free.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    hitec_to_wall
+    {
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_Hitec proxy (this side)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_wall (neighbour)
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    hitec_right
+    {
+        type        fixedValue;
+        value       uniform 0;      // mol/m³ — H₂ removed from Hitec bulk
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,61 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / henry_sieverts / polymer
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/polymer";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Polymer (Henry's law regime).
+// Left BC: C = 1.0 mol/m³ (= KH * p_ref, equivalent partial pressure = 1 Pa).
+//
+// Interface (polymer_to_metal): partition QUADRATIC
+//   C_polymer = KH * (C_metal / Ks_metal)²
+//   Ks (self, polymer) = KH = 1.0
+//   KsNbr (metal) = Ks_metal = 1.0
+//
+// The quadratic BC is the INVERSE of the sqrt BC on the metal side —
+// both express the same physics: p must be equal across the interface.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    polymer_left
+    {
+        type        fixedValue;
+        value       uniform 1.0;        // mol/m³  (= KH × p_ref = 1×1)
+    }
+
+    polymer_to_metal
+    {
+        type        sievertsCoupledMixed;
+        partition   quadratic;          // Henry self: C_A = KH*(C_B/Ks_B)²
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // KH (Henry constant of polymer)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1.0;   // Ks_metal (Sieverts constant of metal)
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,45 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case322-surface-recombination / sieverts_bc / metal
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/metal";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Sieverts equilibrium reference: fixedValue at C_eq = 1.0 mol/m³.
+// This corresponds to instantaneous surface kinetics (Da → ∞), representing
+// the upper bound on permeation flux for the given equilibrium concentration.
+//
+// Analytical SS flux: J = D * C_eq / L = 5e-11 * 1.0 / 5e-4 = 1e-7 mol/(m²·s)
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    metal_left
+    {
+        type        fixedValue;
+        value       uniform 1.0;        // mol/m³  = C_eq (Sieverts equilibrium)
+    }
+
+    metal_right
+    {
+        type        fixedValue;
+        value       uniform 0;          // purge side
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

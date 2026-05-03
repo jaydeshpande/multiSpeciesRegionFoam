@@ -1,0 +1,10 @@
+FoamFile { format ascii; class dictionary; location "constant/metal"; object physicalProperties; }
+thermoType { type heSolidThermo; mixture pureMixture; transport constIsoSolid;
+             thermo eConst; equationOfState rhoConst; specie specie; energy sensibleInternalEnergy; }
+mixture
+{
+    specie      { molWeight 55.8; }
+    transport   { kappa 15.0; }         // W/(m·K)
+    thermodynamics { Cv 530; Hf 0; }    // J/(kg·K)
+    equationOfState { rho 7960; }       // kg/m³
+}

@@ -1,0 +1,79 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/wall";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hydrogen in SS316 tube wall.
+//
+// Both interfaces use sievertsCoupledMixed with Ks_wall = Ks_proxy = 1000
+// (equal Ks → concentration continuity, no jump at either interface).
+//
+// At steady state the concentration profile is non-linear because D(T) varies
+// from ~6.2e-11 m²/s on the hot FLiBe side to ~3.9e-11 m²/s on the cooler
+// Hitec side.  The profile bows toward the Hitec side relative to the
+// constant-D case (more curvature where D is smaller).
+//
+// IC: wall initially hydrogen-free.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    wall_to_flibe
+    {
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_wall (this side)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_FLiBe proxy (neighbour)
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    wall_to_hitec
+    {
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_wall (this side)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_Hitec proxy (neighbour)
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

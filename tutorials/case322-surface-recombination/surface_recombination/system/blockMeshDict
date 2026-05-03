@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case322-surface-recombination / sieverts_bc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Single metal slab, 0.5 mm thick, 50 cells.
+// x = 0      left face  — gas-exposed (left BC varies by sub-case)
+// x = 0.5 mm right face — purge side (C = 0)
+//
+// Diffusion timescale: tau = L²/D = (0.5e-3)²/5e-11 = 5000 s
+// End time = 25000 s = 5 tau
+
+convertToMeters 1e-3;
+
+vertices
+(
+    (0    0  0)
+    (0.5  0  0)
+    (0.5  1  0)
+    (0    1  0)
+    (0    0  1)
+    (0.5  0  1)
+    (0.5  1  1)
+    (0    1  1)
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) metal (50 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    metal_left
+    {
+        type    patch;
+        faces   ( (0 4 7 3) );
+    }
+    metal_right
+    {
+        type    patch;
+        faces   ( (1 2 6 5) );
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 5 4)
+            (3 7 6 2)
+            (0 3 2 1)
+            (4 5 6 7)
+        );
+    }
+);
+
+// ************************************************************************* //

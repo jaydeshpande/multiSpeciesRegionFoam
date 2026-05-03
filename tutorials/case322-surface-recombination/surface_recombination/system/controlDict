@@ -1,0 +1,84 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case322-surface-recombination / surface_recombination
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Surface recombination/dissociation kinetics at left face.
+//
+// Kinetics (isothermal, 300 K):
+//   Kd = 1e-7 mol/(m²·s·Pa),  Kr = 1e-7 m⁴/(mol·s),  pGas = 1 Pa
+//   C_eq = sqrt(Kd*pGas/Kr) = sqrt(1e-7/1e-7) = 1.0 mol/m³
+//
+// Damköhler number Da = Kr * C_eq * L / D = 1e-7 * 1.0 * 5e-4 / 5e-11 = 1.0
+//   Da = 1: surface kinetics partially limits permeation.
+//
+// Analytical steady-state surface concentration:
+//   Kr*Cs² + (D/L)*Cs - Kd*pGas = 0
+//   1e-7*Cs² + 1e-7*Cs - 1e-7 = 0  →  Cs² + Cs - 1 = 0
+//   Cs = (-1 + sqrt(5))/2 ≈ 0.6180 mol/m³  (< C_eq = 1.0)
+//
+// Steady-state flux:
+//   J_surf = D*Cs/L = 5e-11*0.6180/5e-4 ≈ 6.18e-8 mol/(m²·s)
+//   J_ref  = D*C_eq/L                  ≈ 1.00e-7 mol/(m²·s)
+//   J_surf/J_ref ≈ 0.618 (38.2% reduction due to surface kinetics)
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    metal   speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         25000;
+
+deltaT          50;
+
+writeControl    adjustableRunTime;
+writeInterval   2500;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+    "libspeciesCoupling.so"
+    "libspeciesPost.so"
+);
+
+functions
+{
+    permeationFlux
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      metal;
+        species     C_H2;
+        patches     (metal_right);
+        writeControl writeTime;
+    }
+}
+
+// ************************************************************************* //

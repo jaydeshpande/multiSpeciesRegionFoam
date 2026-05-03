@@ -1,0 +1,42 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / sieverts_sieverts / polymer
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/polymer";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Polymer treated as Sieverts material (reference case).
+// Both regions have equal Ks = 1.0, so concentration is continuous at
+// the interface (linear partition with ratio = 1).
+//
+// D is constant (Ea = 0) at 1e-9 m²/s — typical for a gas-permeable polymer.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;   // m²/s  (constant)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1.0;    // mol/m³ (Sieverts constant, same as metal)
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

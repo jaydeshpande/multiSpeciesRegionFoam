@@ -1,0 +1,42 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / sieverts_sieverts / metal
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/metal";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Metal (Sieverts regime), reference case.
+// Ks = 1.0 — same as polymer side, so the linear partition gives
+// concentration continuity (no jump at the interface).
+//
+// D is constant (Ea = 0) at 1e-9 m²/s — equal to polymer for this comparison.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;   // m²/s  (constant, equal to polymer)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1.0;    // mol/m³ (Sieverts constant)
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

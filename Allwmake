@@ -21,10 +21,10 @@ wmake libso src/speciesTransport "$@"
 echo "==> Building libspeciesCoupling"
 wmake libso src/speciesCoupling "$@"
 
-# Solver modules go here once implemented:
-# echo "==> Building speciesFluid solver module"
-# wmake libso modules/speciesFluid "$@"
-# echo "==> Building speciesSolid solver module"
-# wmake libso modules/speciesSolid "$@"
+echo "==> Building libspeciesSolid (solver module)"
+wmake libso src/speciesSolid "$@"
+
+echo "==> Building libspeciesPost (post-processing)"
+wmake libso src/speciesPost "$@"
 
 echo "==> Build complete"

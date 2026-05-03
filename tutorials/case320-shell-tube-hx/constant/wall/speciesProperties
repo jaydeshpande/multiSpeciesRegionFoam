@@ -1,0 +1,54 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/wall";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hydrogen transport in SS316 tube wall.
+// Source: Forcey et al. 1988, J. Nucl. Mater. 160, 153-159, Table 1 (316L SS).
+//
+// Arrhenius diffusivity:
+//   D(T) = 5.08e-7 × exp(-8580/T)  m²/s   (T in K)
+//   D(951 K) ≈ 6.16e-11 m²/s  (FLiBe-side wall temperature)
+//   D(907 K) ≈ 3.94e-11 m²/s  (Hitec-side wall temperature)
+//   Ratio D_hot/D_cold ≈ 1.56  — non-linear concentration profile at SS
+//
+// The temperature gradient across the 0.5 mm SS316 wall (951 → 907 K) arises
+// from conjugate heat transfer between FLiBe (1073 K) and Hitec (673 K).
+//
+// Sieverts solubility (relative units — only the ratio to proxy Ks matters):
+//   Ks_wall = 1000 = Ks_FLiBe proxy = Ks_Hitec proxy
+//   → no concentration jump at either interface (simple diffusion continuity)
+//   Physical Sieverts constant: Ks = 3.89e-4 × exp(1790/T) mol/(m³·Pa^0.5)
+//   At 951 K, 1 bar: C_wall ≈ Ks × sqrt(P) ≈ 1.0 mol/m³  (used as BC)
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 5.08e-7;    // m²/s  (pre-exponential)
+    Ea          71334;                          // J/mol (= 8580 K × 8.314)
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;         // mol/m³  (relative)
+    Ea          0;
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

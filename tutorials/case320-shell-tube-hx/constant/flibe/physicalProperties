@@ -1,0 +1,60 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/flibe";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FLiBe molten salt (66.7% LiF + 33.3% BeF2 by mole), primary loop fluid.
+// Modelled as a thin solid proxy layer (0.1 mm) representing the thermal
+// boundary layer adjacent to the tube wall.  Physical FLiBe properties are
+// used directly; the proxy thickness is tuned to match the actual convective
+// thermal resistance at the design flow rate (Re ≈ 10 000, h ≈ 1.1/0.1e-3
+// × k/L ≈ 11 000 W/(m²·K)).
+//
+// Sources: Romatoski & Hu, Nucl. Technol. 205 (2019) 1367.
+//   ρ = 1940 kg/m³   (at 750°C, 1023 K)
+//   Cp = 2386 J/(kg·K)
+//   k  = 1.1  W/(m·K)
+//   Molecular weight: ⅔LiF + ⅓BeF₂ → MW ≈ 33 g/mol
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       33;       // g/mol  (FLiBe average)
+    }
+    transport
+    {
+        kappa           1.1;      // W/(m·K)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              2386;     // J/(kg·K) — Cp ≈ Cv for this incompressible proxy
+    }
+    equationOfState
+    {
+        rho             1940;     // kg/m³
+    }
+}
+
+// ************************************************************************* //

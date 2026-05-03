@@ -36,8 +36,13 @@ sievertsCoupledMixedFvPatchScalarField
     speciesCoupledMixedFvPatchScalarField(p, iF, dict),
     partition_
     (
-        dict.lookupOrDefault<word>("partition", "linear") == "quadratic"
-      ? quadratic : linear
+        [&]() -> partitionLaw
+        {
+            const word p = dict.lookupOrDefault<word>("partition", "linear");
+            if (p == "quadratic") return quadratic;
+            if (p == "sqrt")      return sqrt_;
+            return linear;
+        }()
     ),
     Ks_(new arrheniusProperty("Ks", dict.subDict("Ks"))),
     KsNbr_(new arrheniusProperty("KsNbr", dict.subDict("KsNbr")))
@@ -107,27 +112,35 @@ void Foam::sievertsCoupledMixedFvPatchScalarField::updateCoeffs()
 
     refG = 0.0;
 
-    // Conductance-weighted by the Sieverts partition ratio.
-    // The partition ratio r = Ks_self/Ks_nbr enters on the self side because
-    // flux continuity + Sieverts (C_s = r*C_n) gives:
-    //   w = D_n*delta_n / (D_n*delta_n + r*D_s*delta_s)
-    const scalarField selfKD = selfD_ * selfDelta * (Ks_self / Ks_nbr);
-    const scalarField nbrKD  = nbrD_  * nbrDelta;
-
-    w = nbrKD / (nbrKD + selfKD + SMALL);
+    const scalarField nbrKD = nbrD_ * nbrDelta;
 
     if (partition_ == linear)
     {
-        // C_w,self = (Ks_self / Ks_nbr) * C_n,c
+        // C_s = (Ks_s/Ks_n)*C_n  →  dC_s/dC_n = Ks_s/Ks_n
         refV = (Ks_self / Ks_nbr) * nbrC;
+        const scalarField selfKD = selfD_ * selfDelta * (Ks_self / Ks_nbr);
+        w = nbrKD / (nbrKD + selfKD + SMALL);
     }
-    else
+    else if (partition_ == quadratic)
     {
-        // Picard-frozen quadratic: C_s = Ks_s * (C_n / Ks_n)^2
-        // The quadratic factor is evaluated at the current iterate;
-        // PIMPLE outer iterations close the fixed-point.
+        // Picard-frozen quadratic: C_s = Ks_s*(C_n/Ks_n)^2
+        // Self is Henry, neighbour is Sieverts.
+        // dC_s/dC_n = 2*C_s/C_n  →  use linearised derivative for selfKD
+        // so that the mixed-BC weight correctly enforces flux continuity.
         const scalarField ratio = nbrC / (Ks_nbr + SMALL);
         refV = Ks_self * ratio * ratio;
+        const scalarField selfKD =
+            selfD_ * selfDelta * 2.0 * refV / (nbrC + SMALL);
+        w = nbrKD / (nbrKD + selfKD + SMALL);
+    }
+    else  // sqrt_: self is Sieverts, neighbour is Henry
+    {
+        // Picard-frozen sqrt: C_s = Ks_s*sqrt(C_n/Ks_n)
+        // dC_s/dC_n = C_s/(2*C_n)  →  use linearised derivative for selfKD.
+        refV = Ks_self * sqrt(max(nbrC, scalar(0)) / (Ks_nbr + SMALL));
+        const scalarField selfKD =
+            selfD_ * selfDelta * refV / (2.0 * max(nbrC, SMALL));
+        w = nbrKD / (nbrKD + selfKD + SMALL);
     }
 
     mixedFvPatchScalarField::updateCoeffs();
@@ -145,7 +158,9 @@ void Foam::sievertsCoupledMixedFvPatchScalarField::write(Ostream& os) const
         os,
         "partition",
         word("linear"),
-        partition_ == quadratic ? word("quadratic") : word("linear")
+        partition_ == quadratic ? word("quadratic")
+      : partition_ == sqrt_    ? word("sqrt")
+      : word("linear")
     );
 
     if (Ks_.valid())    Ks_->write("Ks", os);

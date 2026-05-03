@@ -1,0 +1,46 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / henry_sieverts / metal
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/metal";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Metal in Sieverts regime.
+// Ks_metal = 1.0 mol/(m³·Pa^0.5).
+//
+// C_metal = Ks * sqrt(p)   (Sieverts law — square root of partial pressure)
+//
+// Interface (metal_to_polymer): partition sqrt.
+//   C_metal = Ks_metal * sqrt(C_polymer / KH)
+// At the same partial pressure p, metal holds more dissolved gas than polymer:
+//   C_metal / C_polymer = Ks / (KH * sqrt(p)) = 1/sqrt(p) > 1 for p < 1 Pa.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;   // m²/s  (constant, equal to polymer)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1.0;    // mol/m³  (Sieverts constant, Ks)
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

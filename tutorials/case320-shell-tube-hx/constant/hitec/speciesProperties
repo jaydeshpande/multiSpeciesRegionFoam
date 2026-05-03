@@ -1,0 +1,47 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/hitec";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in Hitec secondary salt.
+//
+// The Hitec proxy uses a large constant diffusivity (same as the FLiBe proxy)
+// so that species equilibrate across the 0.1 mm proxy layer in < 0.1 s,
+// making the outer fixedValue BC (C = 0) an effective perfectly-draining
+// boundary that represents continuous hydrogen removal in the secondary loop.
+//
+// Ks = 1000 (equal to wall and FLiBe proxy) → no Sieverts jump at wall/Hitec
+// interface.  The assumption is that the dissolved-gas partition coefficient
+// between the nitrate salt and the metal surface is unity at these conditions.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-7;    // m²/s  (large proxy diffusivity)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;     // mol/m³  (equal to wall → no jump)
+    Ea          0;
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

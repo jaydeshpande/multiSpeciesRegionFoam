@@ -1,0 +1,21 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+
+echo "========================================================"
+echo " case321-henry-law"
+echo " Sieverts partition vs Henry's law comparison"
+echo "========================================================"
+echo
+
+echo "==> [1/2] Running Sieverts-Sieverts reference case..."
+( cd sieverts_sieverts && ./Allrun )
+
+echo
+echo "==> [2/2] Running Henry-Sieverts case (sqrt partition)..."
+( cd henry_sieverts && ./Allrun )
+
+echo
+echo "==> Compare results:"
+echo "    python3 validation/henry_comparison.py"
+echo "    python3 validation/henry_comparison.py --plot"
+echo

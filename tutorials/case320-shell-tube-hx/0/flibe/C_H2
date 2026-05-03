@@ -1,0 +1,67 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/flibe";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen (tritium surrogate) in FLiBe primary salt.
+//
+// Outer BC (flibe_left):
+//   C = 1.0 mol/m³ — represents the bulk dissolved-H activity maintained by
+//   tritium breeding in the lithium fluoride (⁶Li + n → ⁴He + ³H).
+//   Physically this equals Ks_FLiBe × sqrt(p_H2_eff) for an equivalent
+//   hydrogen partial pressure at the operating temperature.
+//
+// Inner BC (flibe_to_wall):
+//   sievertsCoupledMixed with Ks_FLiBe = Ks_wall = 1000 → no concentration
+//   jump at the fluid/wall contact (C continuous, flux continuous).
+//
+// IC: FLiBe initially fully loaded with H₂ at the inlet concentration.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 1.0;
+
+boundaryField
+{
+    flibe_left
+    {
+        type        fixedValue;
+        value       uniform 1.0;    // mol/m³ — FLiBe dissolved-H concentration
+    }
+
+    flibe_to_wall
+    {
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_FLiBe proxy (this side)
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;   // Ks_wall (neighbour — equal → no jump)
+            Ea      0;
+        }
+        value       uniform 1.0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -26,3 +26,12 @@ log.*
 *.log
 cellToRegion
 *.foam
+
+# --- Validation Output ---
+*.png
+*.dat 
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo

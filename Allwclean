@@ -1,11 +1,16 @@
 #!/bin/sh
 cd "$(dirname "$0")" || exit 1
 
+wclean src/speciesPost
+wclean src/speciesSolid
 wclean src/speciesCoupling
 wclean src/speciesTransport
 
 # Remove built artifacts
 rm -f $FOAM_USER_LIBBIN/libspeciesTransport.so
 rm -f $FOAM_USER_LIBBIN/libspeciesCoupling.so
+rm -f $FOAM_USER_LIBBIN/libspeciesSolid.so
+rm -f $FOAM_USER_LIBBIN/libspeciesPost.so
+rm -f $FOAM_USER_APPBIN/speciesSolid
 
 echo "==> Clean complete"

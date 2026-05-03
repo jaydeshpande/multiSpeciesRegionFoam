@@ -1,0 +1,19 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# case320 — Shell-and-tube heat exchanger: FLiBe | SS316 wall | Hitec
+#
+# Three-region 1-D model through the tube wall.
+# Regions: flibe (FLiBe proxy) | wall (SS316, Arrhenius D(T)) | hitec (Hitec proxy)
+#
+# T_FLiBe = 1073 K (800°C),  T_Hitec = 673 K (400°C)
+# C_H2_FLiBe = 1.0 mol/m³,  C_H2_Hitec = 0 (maintained by H purge)
+#
+# splitMeshRegions creates coupled patches:
+#   flibe_to_wall / wall_to_flibe   (Sieverts + temperature coupling)
+#   wall_to_hitec / hitec_to_wall   (Sieverts + temperature coupling)
+
+runApplication blockMesh
+runApplication splitMeshRegions -cellZones -overwrite
+runApplication foamMultiRun

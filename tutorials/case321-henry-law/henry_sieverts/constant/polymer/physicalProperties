@@ -1,0 +1,10 @@
+FoamFile { format ascii; class dictionary; location "constant/polymer"; object physicalProperties; }
+thermoType { type heSolidThermo; mixture pureMixture; transport constIsoSolid;
+             thermo eConst; equationOfState rhoConst; specie specie; energy sensibleInternalEnergy; }
+mixture
+{
+    specie      { molWeight 28; }
+    transport   { kappa 0.2; }          // W/(m·K)  polymer thermal conductivity
+    thermodynamics { Cv 1700; Hf 0; }   // J/(kg·K)
+    equationOfState { rho 1200; }       // kg/m³
+}

@@ -1,6 +1,6 @@
 # multiSpeciesRegionFoam
 
-An OpenFOAM-13 addon for multi-region species transport through solid membranes and porous materials. The library models diffusion, Arrhenius-temperature-dependent transport coefficients, McNabb–Foster trapping kinetics, and thermodynamically consistent interface partitioning (Sieverts / Henry law). Typical applications include tritium permeation in fusion materials, dense-film membrane separation (reverse osmosis), and membrane distillation.
+An OpenFOAM-13 addon for multi-region species transport through solid membranes and porous materials. The library models diffusion, Arrhenius-temperature-dependent transport coefficients, McNabb–Foster trapping kinetics, and thermodynamically consistent interface partitioning (Sieverts / Henry law). Typical applications include tritium permeation in fission and fusion materials, dense-film membrane separation (reverse osmosis), and membrane distillation.
 
 The solver plugs into OpenFOAM-13's modular `foamMultiRun` architecture: each solid region runs the `speciesSolid` solver module, which couples the species and energy equations within the same PIMPLE loop. Multi-region coupling (heat and species) is handled by OpenFOAM's existing mapped-patch infrastructure.
 
@@ -80,13 +80,80 @@ w         =  nbrKD / (nbrKD + selfKD)
 
 so that `C_face = w · refValue + (1−w) · C_{s,cell}`, consistent with the standard conjugate-heat-transfer derivation applied to species transport.
 
-A **quadratic (Picard-frozen)** variant, `partition quadratic`, models the case where one side is not in the Sieverts regime: `C_s = Ks_s · (C_n / Ks_n)²`. The nonlinearity is lagged to the previous PIMPLE outer iteration.
+Three partition modes are supported:
+
+| `partition` keyword | Self regime | Neighbour regime | Interface condition |
+|---------------------|-------------|------------------|---------------------|
+| `linear` (default)  | Sieverts    | Sieverts         | `C_s/Ks_s = C_n/Ks_n` |
+| `quadratic`         | Henry       | Sieverts         | `C_s = Ks_s · (C_n/Ks_n)²` |
+| `sqrt`              | Sieverts    | Henry            | `C_s = Ks_s · √(C_n/Ks_n)` |
+
+The `quadratic` and `sqrt` modes use Picard (fixed-point) linearisation; PIMPLE outer iterations close the fixed point.
+
+### Surface recombination / dissociation
+
+The `surfaceRecombination` boundary condition models gas-phase atom/molecule exchange at a free surface:
+
+```
+D · ∂C/∂n  =  Kd(T) · p_gas  −  Kr(T) · C²
+```
+
+| Symbol | Meaning | Units |
+|--------|---------|-------|
+| Kd(T)  | dissociation rate (Arrhenius) | mol/(m²·s·Pa) |
+| Kr(T)  | recombination rate (Arrhenius) | m⁴/(mol·s) |
+| p_gas  | imposed gas partial pressure   | Pa |
+
+Dictionary usage:
+
+```
+boundaryField
+{
+    vacuumFace
+    {
+        type    surfaceRecombination;
+        Kd      { X0 1.0e-8;   Ea 20000; }   // Arrhenius pre-exp and Ea [J/mol]
+        Kr      { X0 1.0e-28;  Ea 60000; }
+        pGas    0;                             // [Pa] — 0 = vacuum / purge
+        value   uniform 0;
+    }
+}
+```
+
+The C² nonlinearity is Picard-frozen at the previous cell concentration; PIMPLE outer iterations converge the solution.
+
+### Surface molar flux post-processing
+
+The `speciesFlux` function object computes and writes the area-averaged molar flux
+
+```
+J  =  −D · ∇C · n̂    [mol/(m²·s)]
+```
+
+integrated over user-specified patches, without modifying the solver. The diffusivity field `D_<species>` is written automatically (it is a registered `AUTO_WRITE` field).
+
+```
+functions
+{
+    wallPermeation
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      wall;          // which region mesh to query
+        species     C_H2;          // concentration field name
+        patches     (wall_to_hitec);
+        writeControl writeTime;
+    }
+}
+```
+
+Output is written to `postProcessing/<name>/<time>/speciesFlux.dat` with columns: `time`, `<patch>_J [mol/(m²·s)]`, `<patch>_total [mol/s]`.
 
 ---
 
 ## Library architecture
 
-The addon is split into three libraries and one solver module, built in dependency order:
+The addon is split into four libraries and one solver module, built in dependency order:
 
 ```
 src/
@@ -98,17 +165,22 @@ src/
 │       └── McNabbFoster         Single-trap model with semi-implicit ODE update
 │
 ├── speciesCoupling/     →  libspeciesCoupling.so
-│   ├── speciesCoupledMixed/     Abstract base: neighbour-field mapping
-│   └── sievertsCoupledMixed/    Linear or quadratic Sieverts partition
+│   ├── speciesCoupledMixed/          Abstract base: neighbour-field mapping
+│   ├── sievertsCoupledMixed/         Sieverts/Henry interface partition
+│   └── surfaceRecombination/         Surface recombination/dissociation Robin BC
 │
-└── speciesSolid/        →  libspeciesSolid.so  (solver module)
-    └── speciesSolid             Extends the solid module with species transport
+├── speciesSolid/        →  libspeciesSolid.so  (solver module)
+│   └── speciesSolid             Extends the solid module with species transport
+│
+└── speciesPost/         →  libspeciesPost.so  (post-processing)
+    └── speciesFlux              Function object: surface molar flux ∫ -D∇C·n̂ dA
 ```
 
 Each `controlDict` that uses this addon must load the required libraries:
 
 ```
-libs  ("libspeciesTransport.so"  "libspeciesCoupling.so"  "libspeciesSolid.so");
+libs  ("libspeciesTransport.so"  "libspeciesCoupling.so"
+       "libspeciesSolid.so"      "libspeciesPost.so");
 ```
 
 ---
@@ -166,6 +238,9 @@ All tutorials are self-contained cases in `tutorials/`. Each directory contains 
 | [case317-reverse-osmosis](tutorials/case317-reverse-osmosis/README.md) | Solution-diffusion across two regions | Henry (Sieverts) partition at feed/membrane interface; two-region coupling | `speciesSolid` |
 | [case318-membrane-benchmark](tutorials/case318-membrane-benchmark/README.md) | 1-D transient diffusion, constant BCs | Code-to-code benchmark vs Pasler et al. and Fourier sine series; exact analytical solution | `speciesSolid` |
 | [case319-permeation-barrier](tutorials/case319-permeation-barrier/README.md) | WC coating + SS316 tube, Sieverts interface | Real Arrhenius D(T) for both materials; PRF ≈ 200; with/without coating comparison | `speciesSolid` |
+| [case320-shell-tube-hx](tutorials/case320-shell-tube-hx/README.md) | Conjugate heat + H₂ permeation, FLiBe–SS316–Hitec | Three-region coupled energy and species; Arrhenius D(T) from T gradient through composite wall | `speciesSolid` |
+| [case321-henry-law](tutorials/case321-henry-law/README.md) | Henry's law vs Sieverts' law interface partition | `partition sqrt` / `quadratic`; concentration jump up at interface; 23.6% flux difference | `speciesSolid` |
+| [case322-surface-recombination](tutorials/case322-surface-recombination/README.md) | Surface recombination/dissociation kinetics | `surfaceRecombination` Robin BC; Da=1 gives Cₛ=(√5−1)/2; 38.2% flux reduction vs Sieverts BC | `speciesSolid` |
 
 ---
 

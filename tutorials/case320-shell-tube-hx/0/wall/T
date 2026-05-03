@@ -1,0 +1,54 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/wall";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SS316 tube wall temperature.
+//
+// Both interfaces use coupledTemperature — the energy equation couples heat
+// conduction through flibe | wall | hitec simultaneously.
+//
+// At steady state (reached in < 0.1 s):
+//   T_FLiBe/wall ≈ 951 K   (FLiBe side of wall)
+//   T_wall/Hitec ≈ 907 K   (Hitec side of wall)
+// The 44 K temperature gradient across the 0.5 mm wall drives a 56% variation
+// in the Arrhenius diffusivity D(T), producing a non-linear C_H2 profile.
+//
+// IC: initialised to 929 K (average of the two interface temperatures)
+// to minimise the initial transient; the thermal solver corrects it within
+// the first time step.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 929;
+
+boundaryField
+{
+    wall_to_flibe
+    {
+        type        coupledTemperature;
+        value       uniform 951;
+    }
+
+    wall_to_hitec
+    {
+        type        coupledTemperature;
+        value       uniform 907;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

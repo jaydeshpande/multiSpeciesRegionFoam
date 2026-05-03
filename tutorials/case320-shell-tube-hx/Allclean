@@ -1,0 +1,16 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Remove blockMesh, splitMeshRegions, and solver output
+runApplication -s foamMultiRun foamListTimes -rm > /dev/null 2>&1 || true
+
+rm -rf \
+    constant/flibe/polyMesh \
+    constant/wall/polyMesh \
+    constant/hitec/polyMesh \
+    constant/polyMesh \
+    log.blockMesh \
+    log.splitMeshRegions \
+    log.foamMultiRun \
+    processor*

@@ -1,0 +1,21 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+
+echo "========================================================"
+echo " case322-surface-recombination"
+echo " Sieverts fixedValue vs surface recombination kinetics"
+echo "========================================================"
+echo
+
+echo "==> [1/2] Running Sieverts equilibrium reference..."
+( cd sieverts_bc && ./Allrun )
+
+echo
+echo "==> [2/2] Running surface recombination (Da=1)..."
+( cd surface_recombination && ./Allrun )
+
+echo
+echo "==> Compare results:"
+echo "    python3 validation/recombination_compare.py"
+echo "    python3 validation/recombination_compare.py --plot"
+echo

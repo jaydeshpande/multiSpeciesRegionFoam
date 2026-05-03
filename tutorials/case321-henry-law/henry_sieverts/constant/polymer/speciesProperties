@@ -1,0 +1,45 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / henry_sieverts / polymer
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/polymer";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Polymer in Henry's law regime.
+// Henry constant KH = 1.0 mol/m³ per Pa.  The "Ks" entry here stores
+// KH for use by the sievertsCoupledMixed BC (partition quadratic on this side).
+//
+// C_polymer = KH * p   (linear in partial pressure — Henry's law)
+//
+// At the left BC: C = 1.0 mol/m³ = KH * p_ref → p_ref = 1.0 Pa.
+// At the interface: C_polymer = KH * (C_metal / Ks_metal)²  (quadratic BC)
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;   // m²/s  (constant)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1.0;    // mol/m³  (KH — Henry constant)
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

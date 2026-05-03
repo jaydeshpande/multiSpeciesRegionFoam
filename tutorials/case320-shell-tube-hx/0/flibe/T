@@ -1,0 +1,46 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/flibe";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FLiBe primary salt at 1073 K (800°C).
+// The outer fixedValue represents the bulk FLiBe temperature maintained by
+// the reactor heat source.  The inner face (flibe_to_wall) couples to the
+// SS316 wall via coupledTemperature, transferring heat across the interface.
+// Thermal τ of this proxy layer ≈ 0.04 s — temperature reaches steady state
+// within the first time step (Δt = 100 s).
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 1073;
+
+boundaryField
+{
+    flibe_left
+    {
+        type        fixedValue;
+        value       uniform 1073;   // K — FLiBe bulk temperature
+    }
+
+    flibe_to_wall
+    {
+        type        coupledTemperature;
+        value       uniform 1073;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

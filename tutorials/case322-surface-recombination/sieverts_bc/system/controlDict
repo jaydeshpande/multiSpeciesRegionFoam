@@ -1,0 +1,75 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case322-surface-recombination / sieverts_bc
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Reference case: instantaneous Sieverts equilibrium at the gas face.
+// fixedValue C = C_eq = 1.0 mol/m³.
+//
+// Equilibrium corresponds to: Kd*pGas/Kr = C_eq² = 1  (same parameters as
+// the surface_recombination sub-case, but kinetics assumed infinitely fast).
+//
+// Analytical SS flux: J_ref = D*C_eq/L = 5e-11*1.0/5e-4 = 1e-7 mol/(m²·s)
+//
+// tau = L²/D = (0.5e-3)²/5e-11 = 5000 s;  endTime = 25000 s = 5 tau
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    metal   speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         25000;
+
+deltaT          50;
+
+writeControl    adjustableRunTime;
+writeInterval   2500;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+    "libspeciesCoupling.so"
+    "libspeciesPost.so"
+);
+
+functions
+{
+    permeationFlux
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      metal;
+        species     C_H2;
+        patches     (metal_right);
+        writeControl writeTime;
+    }
+}
+
+// ************************************************************************* //

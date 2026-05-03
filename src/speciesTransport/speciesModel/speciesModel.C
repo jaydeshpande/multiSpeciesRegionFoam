@@ -81,7 +81,7 @@ Foam::speciesModel::speciesModel
             mesh.time().name(),
             mesh,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh,
         dimensionedScalar("zero", dimArea/dimTime, 0.0)

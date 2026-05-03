@@ -1,0 +1,91 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Shell-and-tube HX: FLiBe (primary) → SS316 wall → Hitec (secondary)
+// Three coupled solid regions solved simultaneously by foamMultiRun.
+//
+// Thermal timescale (each layer reaches T steady-state in < 0.1 s):
+//   τ_T_wall = ρ Cv L² / k = 7960 × 530 × (0.5e-3)² / 15 ≈ 0.07 s
+//
+// Species timescale (Arrhenius D in SS316 wall, T ≈ 940 K average):
+//   D(940 K) ≈ 5.08e-7 × exp(-8580/940) ≈ 5.5e-11 m²/s
+//   τ_C_wall = L² / D ≈ (0.5e-3)² / 5.5e-11 ≈ 4 500 s
+//   endTime = 25 000 s ≈ 5.5 τ  →  near-steady-state permeation flux
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    flibe   speciesSolid;
+    wall    speciesSolid;
+    hitec   speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         25000;
+
+deltaT          100;
+
+writeControl    adjustableRunTime;
+writeInterval   2500;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+    "libspeciesCoupling.so"
+    "libspeciesPost.so"
+);
+
+// ── Post-processing: surface molar flux ───────────────────────────────────
+// Reports J = -D∇C·n̂ [mol/(m²·s)] integrated over interface patches.
+// Each entry targets one region; the "region" keyword selects the mesh.
+functions
+{
+    wallFluxIn
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      wall;
+        species     C_H2;
+        patches     (wall_to_flibe);   // FLiBe-side face of wall: inflow
+        writeControl    writeTime;
+    }
+
+    wallFluxOut
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      wall;
+        species     C_H2;
+        patches     (wall_to_hitec);   // Hitec-side face of wall: permeation
+        writeControl    writeTime;
+    }
+}
+
+// ************************************************************************* //

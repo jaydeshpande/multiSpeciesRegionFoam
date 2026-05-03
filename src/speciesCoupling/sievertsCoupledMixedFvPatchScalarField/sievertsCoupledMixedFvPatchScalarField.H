@@ -12,24 +12,22 @@ Description
     solid-fluid, as in Hattab et al. 2024 Eq. 8-9), two conditions hold:
 
       1. Flux continuity:    D_s (dC/dn)_s  =  D_n (dC/dn)_n
-      2. Sieverts partition: C_s / Ks_s     =  C_n / Ks_n   (linear, default)
-
-    where subscript s = "self" (this side), n = "neighbour".  Both regions
-    are assumed to be in the dissociated (Sieverts) regime, so the
-    interface partial pressures are equal and the partition is linear.
+      2. Partition law (one of):
+           linear    C_s/Ks_s = C_n/Ks_n          (Sieverts-Sieverts, default)
+           quadratic C_s = Ks_s * (C_n/Ks_n)^2    (Henry self, Sieverts nbr)
+           sqrt      C_s = Ks_s * sqrt(C_n/Ks_n)  (Sieverts self, Henry nbr)
 
     Cast as a mixed BC, the standard CHT derivation gives:
 
         refGrad  = 0
-        refValue = (Ks_s / Ks_n) * C_n,c
+        refValue = partition-dependent (see below)
         w        = nbrKD / (nbrKD + selfKD)
         selfKD   = D_s * selfDeltaCoeff * (Ks_s / Ks_n)
         nbrKD    = D_n * nbrDeltaCoeff
 
-    A quadratic (Picard-frozen) mode is also available for cases where one
-    side is not in the Sieverts regime and the interface condition is
-    C_s = Ks_s * (C_n / Ks_n)^2.  Enable with partition quadratic; in the
-    dict.  Convergence is still ensured by PIMPLE outer iterations.
+    The quadratic and sqrt modes use Picard (fixed-point) linearisation:
+    refValue is evaluated at the previous-iterate neighbour concentration
+    and PIMPLE outer iterations drive the solution to the correct fixed point.
 
 SourceFiles
     sievertsCoupledMixedFvPatchScalarField.C
@@ -56,7 +54,7 @@ class sievertsCoupledMixedFvPatchScalarField
 {
 public:
 
-    enum partitionLaw { linear, quadratic };
+    enum partitionLaw { linear, quadratic, sqrt_ };
 
 
 private:

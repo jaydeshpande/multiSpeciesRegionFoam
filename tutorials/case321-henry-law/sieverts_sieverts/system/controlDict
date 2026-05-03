@@ -1,0 +1,73 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case321-henry-law / sieverts_sieverts
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Reference case: Sieverts law on both sides (linear partition, Ks=1 both).
+// Interface concentration is continuous; profile is piecewise linear.
+//
+// Diffusion timescale (each 0.5 mm layer, D=1e-9 m²/s):
+//   tau = L²/D = (0.5e-3)² / 1e-9 = 250 s
+// End time = 1250 s = 5 tau → near steady-state.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    polymer     speciesSolid;
+    metal       speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         1250;
+
+deltaT          2;
+
+writeControl    adjustableRunTime;
+writeInterval   125;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+    "libspeciesCoupling.so"
+    "libspeciesPost.so"
+);
+
+functions
+{
+    metalPermeation
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      metal;
+        species     C_H2;
+        patches     (metal_right);
+        writeControl writeTime;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case320-shell-tube-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/flibe";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen (tritium surrogate) in FLiBe.
+//
+// The FLiBe proxy is assigned a large constant diffusivity so that species
+// transport through the proxy is instantaneous relative to the wall timescale
+// (τ_proxy = L²/D ≈ (0.1e-3)²/1e-7 = 0.1 s ≪ τ_wall ≈ 4 500 s).
+// This ensures that the outer fixedValue boundary condition (C = 1.0 mol/m³)
+// is reflected uniformly at the FLiBe/wall interface, matching the physical
+// picture of a well-mixed FLiBe bulk maintaining constant dissolved-H activity.
+//
+// Ks is set equal to the wall value (1000) so that the sievertsCoupledMixed BC
+// at the FLiBe/wall interface enforces simple concentration continuity
+// (no Sieverts jump), consistent with treating the proxy as the same material
+// family as the wall for coupling purposes.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-7;    // m²/s  (large proxy diffusivity)
+    Ea          0;                          // temperature-independent
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;     // mol/m³  (equal to wall → no jump)
+    Ea          0;
+}
+
+source      0;    // mol/(m³·s)
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //
