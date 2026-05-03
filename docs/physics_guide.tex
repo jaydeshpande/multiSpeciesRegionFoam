@@ -131,12 +131,12 @@
 % ============================================================
 
 \texttt{multiSpeciesRegionFoam} is an OpenFOAM-13 add-on that extends the
-native \texttt{foamMultiRun} multi-region framework with coupled species
+native \texttt{foamMultiRun}~\cite{CFDDirect} multi-region framework with coupled species
 transport.  Each solid region runs the \texttt{speciesSolid} solver module,
 which adds a species conservation equation alongside the inherited thermal
 energy equation.  Inter-region coupling (heat and species) uses OpenFOAM's
 mapped-patch infrastructure, and all new boundary conditions are registered
-in the standard run-time selection tables.
+in the standard run-time selection tables~\cite{Hattab2024}.
 
 \textbf{Physical scope.}
 The library targets \emph{diffusion-dominated} transport of a dilute dissolved
@@ -151,7 +151,7 @@ Typical applications are:
         fusion machines, and through structural materials in molten salt reactors (H, D, T transport; Sieverts-law solubility).
   \item Dense-film membrane separation: reverse osmosis, membrane distillation,
         pervaporation (Henry-law solubility, Arrhenius temperature dependence).
-  \item Permeation barriers (tungsten carbide, alumina coatings).
+  \item Permeation barriers (tungsten carbide, alumina coatings)~\cite{Anderl1992}.
   \item Hydrogen permeation in heat exchangers with molten-salt coolants.
 \end{itemize}
 
@@ -319,7 +319,7 @@ is proportional to the \emph{square root} of the gas partial pressure:
 
 $K_s(T)\,[\mol\,\m^{-3}\,\Pa^{-1/2}]$ is the Sieverts solubility constant,
 following the Arrhenius form~\eqref{eq:arrhenius}.  Applicable materials
-include iron, stainless steel (SS316), tungsten, vanadium alloys, and palladium.
+include iron, stainless steel (SS316), tungsten, vanadium alloys, and palladium~\cite{Ockwig2007}.
 
 \begin{tcolorbox}[casebox]
   Used in: \caseref{case312}–\caseref{case314}, \caseref{case318}–\caseref{case320},
@@ -338,7 +338,7 @@ gas in a liquid), the equilibrium concentration is proportional to pressure:
 \end{tcolorbox}
 
 $K_H(T)\,[\mol\,\m^{-3}\,\Pa^{-1}]$ is the Henry constant.  Applicable to
-dense polymer films, membrane distillation membranes, and organic solvents.
+dense polymer films, membrane distillation membranes, and organic solvents~\cite{Baker2012}.
 
 \begin{tcolorbox}[casebox]
   Used in: \caseref{case315}–\caseref{case316} (membrane distillation),
@@ -602,7 +602,7 @@ At equilibrium (zero net flux), $C = C_\text{eq}$:
 
 This is exactly Sieverts' law~\eqref{eq:sieverts} with $K_s = \sqrt{K_d/K_r}$:
 \emph{the surface recombination BC generalises the Sieverts equilibrium BC and
-recovers it in the fast-kinetics limit}.
+recovers it in the fast-kinetics limit}~\cite{Pick1985}.
 
 \subsubsection{Damköhler number}
 
@@ -1056,38 +1056,45 @@ $\mathrm{PRF}$    & Permeation reduction factor          & --- \\
 % ============================================================
 \addcontentsline{toc}{section}{References}
 
-\begin{enumerate}[label={[\arabic*]},itemsep=2pt]
-  \item Hattab, N., Siriano, S., Giannetti, F.
-        \textit{An OpenFOAM multi-region solver for tritium transport modeling
-        in fusion systems.}
-        Fusion Engineering and Design \textbf{202} (2024) 114362.
+\begin{thebibliography}{9}
 
-  \item McNabb, A., Foster, P.\,K.
-        \textit{A new analysis of the diffusion of hydrogen in iron and ferritic
-        steels.}
-        Trans.\ Metall.\ Soc.\ AIME \textbf{227} (1963) 618--627.
+\bibitem{Hattab2024}
+  Hattab, N., Siriano, S., Giannetti, F.
+  \textit{An OpenFOAM multi-region solver for tritium transport modeling
+  in fusion systems.}
+  \textit{Fusion Engineering and Design} \textbf{202} (2024) 114362.
 
-  \item Pick, M.\,A., Sonnenberg, K.
-        \textit{A model for atomic hydrogen-metal interactions — application to
-        recycling, recombination and permeation.}
-        J.\ Nucl.\ Mater.\ \textbf{131} (1985) 208--220.
+\bibitem{McNabb1963}
+  McNabb, A., Foster, P.\,K.
+  \textit{A new analysis of the diffusion of hydrogen in iron and ferritic steels.}
+  \textit{Trans.\ Metall.\ Soc.\ AIME} \textbf{227} (1963) 618--627.
 
-  \item Anderl, R.\,A.\ et al.
-        \textit{Hydrogen transport behavior of metal coatings for plasma-facing
-        components.}
-        J.\ Nucl.\ Mater.\ \textbf{196--198} (1992) 986--991.
+\bibitem{Pick1985}
+  Pick, M.\,A., Sonnenberg, K.
+  \textit{A model for atomic hydrogen-metal interactions --- application to
+  recycling, recombination and permeation.}
+  \textit{J.\ Nucl.\ Mater.} \textbf{131} (1985) 208--220.
 
-  \item Baker, R.\,W.
-        \textit{Membrane Technology and Applications}, 3rd ed.
-        Wiley, 2012. Ch.\ 8 (solution-diffusion model).
+\bibitem{Anderl1992}
+  Anderl, R.\,A.\ et al.
+  \textit{Hydrogen transport behavior of metal coatings for plasma-facing components.}
+  \textit{J.\ Nucl.\ Mater.} \textbf{196--198} (1992) 986--991.
 
-  \item Ockwig, N.\,W., Nenoff, T.\,M.
-        \textit{Membranes for hydrogen separation.}
-        Chem.\ Rev.\ \textbf{107} (2007) 4078--4110.
+\bibitem{Baker2012}
+  Baker, R.\,W.
+  \textit{Membrane Technology and Applications}, 3rd~ed.
+  Wiley, 2012.
 
-  \item CFD Direct.
-        \textit{Modular Solvers in OpenFOAM.}
-        \url{https://cfd.direct/openfoam/free-software/modular-solvers/}
-\end{enumerate}
+\bibitem{Ockwig2007}
+  Ockwig, N.\,W., Nenoff, T.\,M.
+  \textit{Membranes for hydrogen separation.}
+  \textit{Chem.\ Rev.} \textbf{107} (2007) 4078--4110.
+
+\bibitem{CFDDirect}
+  CFD Direct.
+  \textit{Modular Solvers in OpenFOAM.}
+  \url{https://cfd.direct/openfoam/free-software/modular-solvers/}
+
+\end{thebibliography}
 
 \end{document}
