@@ -1,0 +1,55 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/flibe";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FLiBe enters hot at 973 K (fixedValue at inlet).
+// Outlet and outer wall: zeroGradient — temperature evolves freely along the
+// channel as heat is exchanged through the SS316 wall with the cooler Hitec.
+// In FLiBe Ea=0 so T has no effect on species diffusivity, but T is required
+// by heSolidThermo and drives the coupledTemperature BC at the wall interface.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 973;
+
+boundaryField
+{
+    flibe_inlet
+    {
+        type        fixedValue;
+        value       uniform 973;
+    }
+
+    flibe_outlet
+    {
+        type        zeroGradient;
+    }
+
+    flibe_outer
+    {
+        type        zeroGradient;
+    }
+
+    flibe_to_wall
+    {
+        type        coupledTemperature;
+        value       uniform 973;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

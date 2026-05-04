@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/wall";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hydrogen transport in SS316 tube wall.
+//
+// Constant effective diffusivity D = 5e-8 m²/s, chosen to give a wall
+// diffusion timescale τ = δ²/D = (4e-3)²/5e-8 = 320 s — visible within
+// the 2000 s run time.
+//
+// NOTE: The true Forcey 1988 Arrhenius values (D₀=5.08e-7, Ea=71334 J/mol)
+// give D(973 K) = 7.5e-11 m²/s → τ_wall = 59 hours.  Using Arrhenius here
+// would require endTime ≈ 1e6 s to see steady-state permeation.
+// Set Ea back to 71334 and X0 to 5.08e-7 if running a long validation case.
+//
+// Sieverts solubility matches FLiBe/Hitec → concentration is continuous
+// across both fluid–wall interfaces (no partition jump).
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 5e-8;   // m²/s  (constant, Ea=0)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/wall";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SS316 stainless steel tube wall.
+// Properties: ρ = 7960 kg/m³,  Cp = 530 J/(kg·K),  k = 15 W/(m·K).
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       56;
+    }
+    transport
+    {
+        kappa           15;
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              530;
+    }
+    equationOfState
+    {
+        rho             7960;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/flibe";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FLiBe molten salt: 66.7% LiF + 33.3% BeF2 (primary loop)
+// Properties at 973 K (700°C).  Sources: Romatoski & Hu, Nucl. Technol. 205 (2019).
+//   ρ = 1940 kg/m³    Cp = 2386 J/(kg·K)    k = 1.1 W/(m·K)
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       33;
+    }
+    transport
+    {
+        kappa           1.1;
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              2386;
+    }
+    equationOfState
+    {
+        rho             1940;
+    }
+}
+
+// ************************************************************************* //

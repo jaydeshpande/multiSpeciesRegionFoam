@@ -1,0 +1,48 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/hitec";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in Hitec secondary salt — turbulent flow.
+//
+// u_bulk = 2 m/s, D_h = 80 mm, Re ≈ 34 000 → turbulent (k-ω SST regime).
+//
+// Effective diffusivity (bulk-average k-ω SST estimate):
+//   u* ≈ 0.07·u_bulk / √2 ≈ 0.099 m/s
+//   ν_t_bulk ≈ 0.07/2 × u* × D_h/2 ≈ 1.7e-4 m²/s
+//   D_eff = ν_t / Sc_t  (Sc_t = 0.85) ≈ 2e-4 m²/s
+//
+// Hitec enters at y = 500 mm with C = 0 (clean salt) and flows toward y = 0.
+// Ks_Hitec = Ks_wall = 1000 → no concentration jump at wall–Hitec interface.
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 2e-4;   // m²/s  (k-ω SST effective, Ea=0)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

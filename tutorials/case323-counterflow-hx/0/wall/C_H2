@@ -1,0 +1,84 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/wall";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in SS316 wall.
+// Pure diffusion (no U field).  Concentration driven by Sieverts-law
+// coupling at both fluid–wall interfaces.
+// D(973 K) ≈ 5e-8 m²/s (Forcey 1988 Arrhenius parameters).
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    wall_to_flibe
+    {
+        // Sieverts-law partition: Ks_wall = Ks_flibe = 1000 → no jump
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        KsNbr
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        value       uniform 0;
+    }
+
+    wall_to_hitec
+    {
+        // Sieverts-law partition: Ks_wall = Ks_hitec = 1000 → no jump
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        KsNbr
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        value       uniform 0;
+    }
+
+    wall_inlet
+    {
+        type        zeroGradient;
+    }
+
+    wall_outlet
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

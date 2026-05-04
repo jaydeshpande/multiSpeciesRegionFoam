@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/hitec";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hitec plug-flow velocity in the −y direction (counter-flow to FLiBe).
+// u_bulk = 2.5 m/s, D_h = 80 mm → Re = ρ·u·D_h/μ = 1680×2.5×0.08/8e-3 ≈ 42 000
+// Turbulent regime; inlet at y = 500 mm, flowing toward y = 0.
+// Inlet temperature: 673 K (cold secondary salt, heated by the wall as it flows).
+// Effective diffusivity handled via D_eff in speciesProperties.
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 -2.5 0);
+
+boundaryField
+{
+    hitec_inlet
+    {
+        type        fixedValue;
+        value       uniform (0 -2.5 0);  // −y: inlet at y=500mm, flowing toward y=0
+    }
+
+    hitec_outlet
+    {
+        type        zeroGradient;
+    }
+
+    hitec_outer
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);
+    }
+
+    hitec_to_wall
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);   // no normal flow across fluid-wall interface
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

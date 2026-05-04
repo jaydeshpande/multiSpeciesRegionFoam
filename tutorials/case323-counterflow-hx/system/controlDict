@@ -1,0 +1,93 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Counter-flow HX: FLiBe (hot, 973 K, hydrogen-bearing) → SS316 wall → Hitec (cold, 673 K)
+// Three coupled regions solved by foamMultiRun with speciesSolid.
+// Prescribed turbulent velocities: FLiBe u = 1.0 m/s (+y), Hitec u = 2.5 m/s (−y).
+// Effective species diffusivity from k-ω SST bulk estimate (D_eff = ν_t/Sc_t).
+//
+// Key timescales  (L = 500 mm, wall δ = 4 mm, D_wall = 5e-8 m²/s):
+//   FLiBe flow-through:  τ_FLiBe = L/u = 0.5/1.0 = 0.5 s
+//   Hitec flow-through:  τ_Hitec = L/u = 0.5/2.5 = 0.2 s
+//   Wall species:        τ_wall  = δ²/D = (4e-3)²/5e-8 = 320 s
+//   → Species steady-state reached by ≈ 5×τ_wall ≈ 1600 s
+//   endTime = 50 000 s → >30×τ_wall, fully converged species and thermal profiles.
+//   deltaT = 2 s (convection handled implicitly via fvm::div).
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    flibe   speciesSolid;
+    wall    speciesSolid;
+    hitec   speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         50000;
+
+deltaT          2;
+
+writeControl    adjustableRunTime;
+writeInterval   5000;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+    "libspeciesCoupling.so"
+    "libspeciesPost.so"
+);
+
+// ── Post-processing: permeation flux through SS316 wall ───────────────────
+// wallFluxFLiBe: flux entering the wall from FLiBe side (inflow)
+// wallFluxHitec: flux leaving the wall into Hitec (permeation output)
+functions
+{
+    wallFluxFLiBe
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      wall;
+        species     C_H2;
+        patches     (wall_to_flibe);
+        writeControl    writeTime;
+    }
+
+    wallFluxHitec
+    {
+        type        speciesFlux;
+        libs        ("libspeciesPost.so");
+        region      wall;
+        species     C_H2;
+        patches     (wall_to_hitec);
+        writeControl    writeTime;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/hitec";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hitec molten nitrate salt (secondary loop coolant).
+// Properties at 673 K (400°C).
+//   ρ = 1680 kg/m³    Cp = 1560 J/(kg·K)    k = 0.57 W/(m·K)
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       101;
+    }
+    transport
+    {
+        kappa           0.57;
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1560;
+    }
+    equationOfState
+    {
+        rho             1680;
+    }
+}
+
+// ************************************************************************* //

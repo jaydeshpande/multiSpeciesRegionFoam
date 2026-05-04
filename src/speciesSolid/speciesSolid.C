@@ -10,6 +10,9 @@
 #include "speciesSolid.H"
 #include "fvmDdt.H"
 #include "fvmLaplacian.H"
+#include "fvmDiv.H"
+#include "fvcFlux.H"
+#include "volFields.H"
 #include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -70,8 +73,11 @@ void Foam::solvers::speciesSolid::thermophysicalPredictor()
         // 2. Refresh diffusivity with the updated temperature
         species_.correctProperties();
 
-        // 3. Species diffusion equation
-        //    dC/dt = div(D(T)*grad(C)) - trap.sink() + source
+        // 3. Species transport equation:
+        //    dC/dt + div(U,C) = div(D(T)*grad(C)) - trap.sink() + source
+        // The convection term is included only when a velocity field U is
+        // registered on the mesh (fluid regions in the counterflow HX case).
+        // Solid regions carry no U field and remain pure-diffusion.
         fvScalarMatrix CEqn
         (
             fvm::ddt(C)
@@ -79,6 +85,13 @@ void Foam::solvers::speciesSolid::thermophysicalPredictor()
          ==
           - species_.trap().sink()
         );
+
+        if (mesh_.foundObject<volVectorField>("U"))
+        {
+            const volVectorField& U =
+                mesh_.lookupObject<volVectorField>("U");
+            CEqn += fvm::div(fvc::flux(U), C);
+        }
 
         // Add uniform volumetric source [mol/m³/s] * V [m³] → [mol/s per cell].
         // DimensionedField<scalar,volMesh> inherits from Field<scalar>, so the

@@ -1,0 +1,46 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+ddtSchemes
+{
+    default     Euler;
+}
+
+gradSchemes
+{
+    default     Gauss linear;
+}
+
+divSchemes
+{
+    default     none;
+    // Upwind convection for species transport (high-Pe axial flow)
+    div(phi,C_H2)   Gauss upwind;
+}
+
+laplacianSchemes
+{
+    default     Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default     linear;
+}
+
+snGradSchemes
+{
+    default     corrected;
+}
+
+// ************************************************************************* //

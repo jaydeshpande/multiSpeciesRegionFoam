@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / wall
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/wall";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal at 973 K.  T drives the Arrhenius diffusivity of SS316.
+// At 973 K: D_SS316 = 5.08e-7 * exp(-71334/8.314/973) ≈ 5e-8 m²/s.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 973;
+
+boundaryField
+{
+    wall_to_flibe
+    {
+        type        coupledTemperature;
+        value       uniform 973;
+    }
+
+    wall_to_hitec
+    {
+        type        coupledTemperature;
+        value       uniform 973;
+    }
+
+    wall_inlet
+    {
+        type        zeroGradient;
+    }
+
+    wall_outlet
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

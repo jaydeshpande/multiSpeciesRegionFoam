@@ -1,0 +1,59 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/flibe";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FLiBe plug-flow velocity in the +y direction (axial flow direction).
+// u_bulk = 1.0 m/s, D_h = 40 mm → Re = ρ·u·D_h/μ = 1940×1.0×0.04/5e-3 ≈ 15 500
+// Turbulent regime; effective diffusivity handled via D_eff in speciesProperties.
+// The velocity is prescribed (not solved); the speciesSolid module detects
+// the U field and adds fvm::div(fvc::flux(U), C_H2) to the species equation.
+//
+// Flow direction: +y (FLiBe inlet at y=0, outlet at y=500mm).
+// Inlet temperature: 973 K (hot primary salt).
+
+dimensions      [0 1 -1 0 0 0 0];   // m/s
+
+internalField   uniform (0 1.0 0);
+
+boundaryField
+{
+    flibe_inlet
+    {
+        type        fixedValue;
+        value       uniform (0 1.0 0);
+    }
+
+    flibe_outlet
+    {
+        type        zeroGradient;
+    }
+
+    flibe_outer
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);   // no flow through outer impermeable wall
+    }
+
+    flibe_to_wall
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);   // no normal flow across fluid-wall interface
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

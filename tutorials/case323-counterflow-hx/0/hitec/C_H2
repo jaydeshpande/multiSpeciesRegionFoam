@@ -1,0 +1,68 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/hitec";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in Hitec secondary salt.
+// Inlet (y=500 mm, counter-flow): C = 0 (clean salt entering).
+// Hydrogen permeates from SS316 wall into Hitec and exits at y=0.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    hitec_inlet
+    {
+        type        fixedValue;
+        value       uniform 0;        // mol/m³ — clean salt at counter-flow inlet
+    }
+
+    hitec_outlet
+    {
+        type        zeroGradient;
+    }
+
+    hitec_outer
+    {
+        type        zeroGradient;     // impermeable outer wall
+    }
+
+    hitec_to_wall
+    {
+        // Sieverts-law partition: Ks_hitec = Ks_wall = 1000 → no jump
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        KsNbr
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

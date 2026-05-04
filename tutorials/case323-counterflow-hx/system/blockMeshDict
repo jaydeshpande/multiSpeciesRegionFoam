@@ -1,0 +1,155 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Counter-flow HX: FLiBe (primary) | SS316 wall | Hitec (secondary)
+//
+// Cross-section (x-direction):
+//   x =  0      to  20 mm — FLiBe channel    (20 mm,  10 cells, graded)
+//   x = 20      to  24 mm — SS316 tube wall  ( 4 mm,  20 cells, uniform)
+//   x = 24      to  64 mm — Hitec channel    (40 mm,  10 cells, graded)
+//
+// Axial flow direction (y):
+//   y = 0 to 500 mm (100 cells, uniform, Δy = 5 mm)
+//
+// Out-of-plane (z): 1 mm, 1 cell (2-D planar)
+//
+// ── Mesh grading rationale ────────────────────────────────────────────────
+//
+// Turbulence model: k-ω SST (bulk-average effective diffusivity approach).
+// At the prescribed bulk velocities the Péclet number far exceeds the
+// inverse Sc number, so the concentration boundary layer near the fluid–wall
+// interface is the thinnest length scale.  Cells are clustered toward each
+// fluid–wall interface to resolve this gradient.
+//
+//   FLiBe: 10 cells over 20 mm, simpleGrading 0.1
+//          → first cell Δx ≈ 0.35 mm (near outer wall x=0)
+//          → last  cell Δx ≈ 0.035 mm (near fluid–wall interface x=20 mm)
+//
+//   Wall:  20 cells over 4 mm, uniform → Δx = 0.2 mm
+//
+//   Hitec: 10 cells over 40 mm, simpleGrading 10
+//          → first cell Δx ≈ 0.07 mm (near fluid–wall interface x=24 mm)
+//          → last  cell Δx ≈ 0.7 mm  (near outer wall x=64 mm)
+//
+// ── Flow conditions ───────────────────────────────────────────────────────
+//
+//   FLiBe: u_bulk = 2 m/s (+y), D_h = 40 mm, Re ≈ 31 000  (turbulent)
+//   Hitec: u_bulk = 2 m/s (−y), D_h = 80 mm, Re ≈ 34 000  (turbulent)
+//
+//   Effective species diffusivity from k-ω SST bulk estimate:
+//     D_eff = ν_t / Sc_t  (Sc_t = 0.85)
+//     FLiBe: ν_t ≈ 8.5e-5 m²/s  →  D_eff ≈ 1e-4 m²/s
+//     Hitec: ν_t ≈ 1.7e-4 m²/s  →  D_eff ≈ 2e-4 m²/s
+//
+// splitMeshRegions -cellZones creates coupled patches:
+//   flibe_to_wall / wall_to_flibe
+//   wall_to_hitec / hitec_to_wall
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    //  y = 0 plane, z = 0 mm
+    (0    0     0)    //  0 — FLiBe outer (x=0),       y=0, z=0
+    (20   0     0)    //  1 — FLiBe/wall  (x=20 mm),   y=0, z=0
+    (24   0     0)    //  2 — wall/Hitec  (x=24 mm),   y=0, z=0
+    (64   0     0)    //  3 — Hitec outer (x=64 mm),   y=0, z=0
+
+    //  y = 500 mm plane, z = 0 mm
+    (0    500   0)    //  4
+    (20   500   0)    //  5
+    (24   500   0)    //  6
+    (64   500   0)    //  7
+
+    //  y = 0 plane, z = 1 mm
+    (0    0     1)    //  8
+    (20   0     1)    //  9
+    (24   0     1)    // 10
+    (64   0     1)    // 11
+
+    //  y = 500 mm plane, z = 1 mm
+    (0    500   1)    // 12
+    (20   500   1)    // 13
+    (24   500   1)    // 14
+    (64   500   1)    // 15
+);
+
+blocks
+(
+    // FLiBe channel — graded toward fluid/wall interface at x = 20 mm
+    // simpleGrading (0.1 1 1): last cell / first cell = 0.1  (fine at x=20 mm)
+    hex (0 1 5 4 8 9 13 12)   flibe  (10 100 1) simpleGrading (0.1 1 1)
+
+    // SS316 wall — uniform spacing through 4 mm wall
+    hex (1 2 6 5 9 10 14 13)  wall   (20 100 1) simpleGrading (1   1 1)
+
+    // Hitec channel — graded toward fluid/wall interface at x = 24 mm
+    // simpleGrading (10 1 1): last cell / first cell = 10  (fine at x=24 mm)
+    hex (2 3 7 6 10 11 15 14) hitec  (10 100 1) simpleGrading (10  1 1)
+);
+
+boundary
+(
+    flibe_outer
+    {
+        type    patch;
+        faces   ( (0 8 12 4) );       // x = 0, FLiBe left outer face
+    }
+    hitec_outer
+    {
+        type    patch;
+        faces   ( (3 7 15 11) );      // x = 64 mm, Hitec right outer face
+    }
+    flibe_inlet
+    {
+        type    patch;
+        faces   ( (0 1 9 8) );        // y = 0, FLiBe inlet (+y flow)
+    }
+    hitec_inlet
+    {
+        type    patch;
+        faces   ( (6 14 15 7) );      // y = 500 mm, Hitec inlet (−y counter-flow)
+    }
+    flibe_outlet
+    {
+        type    patch;
+        faces   ( (4 12 13 5) );      // y = 500 mm, FLiBe outlet
+    }
+    hitec_outlet
+    {
+        type    patch;
+        faces   ( (2 3 11 10) );      // y = 0, Hitec outlet
+    }
+    wall_inlet
+    {
+        type    patch;
+        faces   ( (1 2 10 9) );       // y = 0, wall axial end (zeroGradient)
+    }
+    wall_outlet
+    {
+        type    patch;
+        faces   ( (5 13 14 6) );      // y = 500 mm, wall axial end (zeroGradient)
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 4 5 1)    (8 9 13 12)    // z-faces — FLiBe
+            (1 5 6 2)    (9 10 14 13)   // z-faces — wall
+            (2 6 7 3)    (10 11 15 14)  // z-faces — Hitec
+        );
+    }
+);
+
+// ************************************************************************* //

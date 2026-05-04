@@ -1,0 +1,57 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / hitec
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/hitec";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hitec enters cold at 673 K (fixedValue at inlet, y=500mm counter-flow).
+// The salt warms up as it flows toward y=0, exchanging heat through the
+// SS316 wall with the hot FLiBe (973 K inlet).
+// Outer wall and outlet: zeroGradient — temperature evolves freely.
+// Ea=0 in Hitec so D is temperature-independent; T is required by heSolidThermo
+// and drives the coupledTemperature BC at the wall interface.
+// Steady-state thermal gradient: 673 K → ~973 K over 500 mm (axial).
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 973;
+
+boundaryField
+{
+    hitec_inlet
+    {
+        type        fixedValue;
+        value       uniform 673;
+    }
+
+    hitec_outlet
+    {
+        type        zeroGradient;
+    }
+
+    hitec_outer
+    {
+        type        zeroGradient;
+    }
+
+    hitec_to_wall
+    {
+        type        coupledTemperature;
+        value       uniform 973;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

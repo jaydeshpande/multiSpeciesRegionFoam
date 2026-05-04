@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/flibe";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen transport in FLiBe primary salt — turbulent flow.
+//
+// u_bulk = 2 m/s, D_h = 40 mm, Re ≈ 31 000 → turbulent (k-ω SST regime).
+//
+// Effective diffusivity (bulk-average k-ω SST estimate):
+//   u* ≈ 0.07·u_bulk / √2 ≈ 0.121 m/s
+//   ν_t_bulk ≈ 0.07/2 × u* × D_h/2 ≈ 8.5e-5 m²/s
+//   D_eff = ν_t / Sc_t  (Sc_t = 0.85) ≈ 1e-4 m²/s
+//
+// This D_eff is ~10 000× the molecular value, reflecting turbulent mixing.
+// The convection term div(U,C_H2) is active because the 0/flibe/U field
+// is present; the solver adds it automatically.
+//
+// Ks_FLiBe: set equal to Ks_wall (1000 mol/m³/Pa^0.5) so there is no
+//   concentration discontinuity at the FLiBe–wall interface.
+//   (A non-unity Ks ratio would give a concentration jump; see case314.)
+
+species     C_H2;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-4;   // m²/s  (k-ω SST effective, Ea=0)
+    Ea          0;
+}
+
+Ks
+{
+    X0          [0 -3 0 0 1 0 0] 1000;   // mol/m³ — matches wall Ks → no jump
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

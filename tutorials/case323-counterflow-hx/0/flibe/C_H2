@@ -1,0 +1,68 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case323-counterflow-hx / flibe
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/flibe";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in FLiBe.
+// Inlet (y=0): C = 1 mol/m³ (hydrogen-bearing primary salt).
+// Initial condition: 0 everywhere (empty channel at t=0).
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    flibe_inlet
+    {
+        type        fixedValue;
+        value       uniform 1;        // mol/m³ — hydrogen inlet concentration
+    }
+
+    flibe_outlet
+    {
+        type        zeroGradient;
+    }
+
+    flibe_outer
+    {
+        type        zeroGradient;     // impermeable outer wall
+    }
+
+    flibe_to_wall
+    {
+        // Sieverts-law partition: Ks_flibe = Ks_wall = 1000 → no jump
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        KsNbr
+        {
+            X0          [0 -3 0 0 1 0 0] 1000;
+            Ea          0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

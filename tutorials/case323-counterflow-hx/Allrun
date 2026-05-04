@@ -1,0 +1,19 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# case323 — Counter-flow heat exchanger: FLiBe | SS316 wall | Hitec
+#
+# 2-D geometry: x = cross-section (FLiBe 2mm + Wall 2mm + Hitec 2mm)
+#               y = axial flow direction (1 m)
+#
+# FLiBe flows in +y at 0.01 m/s with C_H2 = 1 mol/m³ at the inlet.
+# Hitec flows in -y at 0.01 m/s (counter-flow) with C_H2 = 0 at the inlet.
+# Hydrogen permeates through the SS316 wall via Fickian diffusion.
+#
+# The speciesSolid solver adds fvm::div(fvc::flux(U), C_H2) to the species
+# equation automatically when a U field is registered in the mesh region.
+
+runApplication blockMesh
+runApplication splitMeshRegions -cellZones -overwrite
+runApplication foamMultiRun

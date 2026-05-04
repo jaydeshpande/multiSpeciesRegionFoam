@@ -1,0 +1,13 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/CleanFunctions"
+
+# cleanCase removes time directories > 0, processor*, postProcessing, logs
+# It preserves 0/ so initial field files survive.
+cleanCase
+
+rm -rf constant/flibe/polyMesh constant/wall/polyMesh constant/hitec/polyMesh
+rm -rf constant/polyMesh constant/*/cellToRegionAddressing
+rm -f  constant/cellToRegion
+rm -f  0/cellToRegion 0/flibe/cellToRegion 0/wall/cellToRegion 0/hitec/cellToRegion
+rm -f  log.* foam.foam
