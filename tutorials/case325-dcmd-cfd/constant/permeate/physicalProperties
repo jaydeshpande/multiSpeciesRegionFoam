@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/permeate";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Cold fresh water — properties at 20°C (293 K).
+//   ρ   = 998    kg/m³
+//   Cv  = 4182   J/(kg·K)
+//   κ   = 0.598  W/(m·K)
+//   α   = κ/(ρ·Cv) = 1.43×10⁻⁷ m²/s
+//   Pr  = μ·Cv/κ ≈ 7.0 at 20°C
+//
+// Counter-flow: U = (0, −0.169, 0) m/s, inlet at y = 66 mm.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       18;        // g/mol
+    }
+    transport
+    {
+        kappa           0.598;     // W/(m·K) at 20°C
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              4182;      // J/(kg·K) at 20°C
+    }
+    equationOfState
+    {
+        rho             998;       // kg/m³ at 20°C
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,69 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case324-dcmd-khalifa2017 / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Water-vapour transport through PTFE 0.45 µm hydrophobic membrane.
+// Khalifa et al., Desalination 404 (2017) 22-34, Table 1.
+//
+// Membrane parameters:
+//   δ = 154 µm (total thickness)
+//   d_pore = 379 nm, ε = 0.80, θ = 139°
+//
+// Effective pore diffusivity: combined Knudsen + molecular (transition regime).
+//
+//   Knudsen diffusivity (d = 379 nm, r = 189.5 nm):
+//     D_K(T) = (2r/3) · sqrt(8RT/(π·M))    [M_H2O = 0.018 kg/mol]
+//     D_K(314 K) ≈ 7.7e-5 m²/s
+//
+//   Molecular diffusivity (H₂O vapour in air):
+//     D_M(T) = 2.26e-5 · (T/273.15)^1.81   [m²/s, 1 atm]
+//     D_M(314 K) ≈ 2.9e-5 m²/s
+//
+//   Combined (resistance in parallel):
+//     D_pore(T) = 1 / (1/D_K(T) + 1/D_M(T)) ≈ 2.1e-5 m²/s  at T = 314 K
+//
+//   Effective diffusivity (porosity only, no additional tortuosity for PTFE):
+//     D_eff(T) = ε · D_pore(T) = 0.80 × 2.1e-5 ≈ 1.68e-5 m²/s at 314 K
+//
+// Arrhenius fit to D_eff(T) over 299-328 K (range of membrane face temperatures):
+//   D_eff(299 K) = 1.57e-5 m²/s  (cold face, T_permeate = 26°C)
+//   D_eff(328 K) = 1.79e-5 m²/s  (hot face,  T_feed     = 55°C)
+//
+//   Ea  = R·ln(D_hot/D_cold)/(1/T_cold - 1/T_hot)
+//       = 8.314·ln(1.79/1.57)/(1/299-1/328) = 3700 J/mol
+//   X0  = D_hot · exp(Ea/(R·T_hot)) = 6.9e-5 m²/s
+//
+// NOTE: The Arrhenius Ea here is positive (D increases with T) because higher
+// temperature accelerates both molecular diffusion and Knudsen transport.
+// In OpenFOAM: D(T) = X0·exp(-Ea/(R·T)).  With Ea=3700>0 and R=8.314,
+// D increases as T rises from 299→328 K (change ≈ +14%).
+//
+// No Ks entry is needed: concentrations are set directly from Antoine vapour
+// pressure at each face (fixedValue BCs) — no Sieverts partitioning is applied.
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 6.9e-5;   // m²/s
+    Ea          3700;                         // J/mol  (D increases with T)
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

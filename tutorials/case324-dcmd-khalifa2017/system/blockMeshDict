@@ -1,0 +1,69 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case324-dcmd-khalifa2017
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// PTFE 0.45 µm membrane from Khalifa et al., Desalination 404 (2017) 22-34.
+// Geometry: 1D slab, thickness δ = 154 µm (Table 1).  Cross-section 1 mm × 1 mm.
+// 100 cells in x (dx = 1.54 µm, well-resolved relative to pore size = 379 nm).
+//
+// x = 0  →  hot_face  (feed/membrane interface,  T = 328 K = 55 °C)
+// x = δ  →  cold_face (membrane/permeate interface, T = 299 K = 26 °C)
+//
+// Face temperatures account for temperature polarization (TPC ≈ 0.73)
+// computed from heat transfer correlations for the DCMD module
+// (feed Re ≈ 3750, Nu ≈ 58, h_f ≈ 4600 W m⁻² K⁻¹; see README for details).
+
+convertToMeters 1;
+
+vertices
+(
+    (0       0      0    )   // 0
+    (154e-6  0      0    )   // 1
+    (154e-6  1e-3   0    )   // 2
+    (0       1e-3   0    )   // 3
+    (0       0      1e-3 )   // 4
+    (154e-6  0      1e-3 )   // 5
+    (154e-6  1e-3   1e-3 )   // 6
+    (0       1e-3   1e-3 )   // 7
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) membrane (100 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    hot_face
+    {
+        type    patch;
+        faces   ( (0 4 7 3) );   // x = 0     — feed-side membrane surface
+    }
+    cold_face
+    {
+        type    patch;
+        faces   ( (1 2 6 5) );   // x = 154 µm — permeate-side membrane surface
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 1 5 4)
+            (3 7 6 2)
+            (0 3 2 1)
+            (4 5 6 7)
+        );
+    }
+);
+
+// ************************************************************************* //

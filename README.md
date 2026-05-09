@@ -1,136 +1,174 @@
 # multiSpeciesRegionFoam
 
-An OpenFOAM-13 addon for multi-region species transport through solid membranes and porous materials. The library models diffusion, Arrhenius-temperature-dependent transport coefficients, McNabb–Foster trapping kinetics, and thermodynamically consistent interface partitioning (Sieverts / Henry law). Typical applications include tritium permeation in fission and fusion materials, dense-film membrane separation (reverse osmosis), and membrane distillation.
+An OpenFOAM-13 addon for multi-region species transport through solid membranes, fluid channels, and composite material systems. The library models advection-diffusion, Arrhenius temperature-dependent transport coefficients, McNabb–Foster trapping kinetics, and thermodynamically consistent interface partitioning (Sieverts / Henry law). Typical applications include tritium permeation in fission and fusion systems, dense-film membrane separation (reverse osmosis, membrane distillation), permeation barriers, and heat-exchanger conjugate transfer with dissolved species.
 
-The solver plugs into OpenFOAM-13's modular `foamMultiRun` architecture: each solid region runs the `speciesSolid` solver module, which couples the species and energy equations within the same PIMPLE loop. Multi-region coupling (heat and species) is handled by OpenFOAM's existing mapped-patch infrastructure.
+Two solver modules extend the OpenFOAM-13 `foamMultiRun` framework:
+
+- **`speciesSolid`** — adds species transport to solid regions (or fluid regions with prescribed flow). Inherits the `solid` base module for temperature via `solidThermo`. Suitable when the velocity field is known or negligibly influences the solution.
+- **`speciesFluid`** — adds species and temperature transport to fully solved incompressible fluid regions. Inherits the `incompressibleFluid` base module (PIMPLE U/p loop). Use when the velocity field must be computed from the Navier-Stokes equations.
 
 ---
 
 ## Governing equations
 
-### Species diffusion
+### Species transport — solid regions (`speciesSolid`)
 
-In each solid region the mobile species concentration C [mol m⁻³] satisfies
+In each solid region the mobile species concentration C [mol m⁻³] satisfies:
 
 ```
 ∂C/∂t  =  ∇·(D(T) ∇C)  −  ∂Ct/∂t  +  S_vol
 ```
 
-where D(T) is the temperature-dependent diffusivity (Arrhenius form, see below), Ct is the trapped concentration (zero when trapping is disabled), and S_vol [mol m⁻³ s⁻¹] is an optional uniform volumetric source.
-
-### Heat conduction
-
-The energy equation (solved by the inherited `solid` base module) is
+When a velocity field U is registered on the mesh (e.g. prescribed flow in a channel region using `speciesSolid`), an advection term is added automatically:
 
 ```
-∂(ρ e)/∂t  +  ∇·q  =  S_e
+∂C/∂t  +  ∇·(U C)  =  ∇·(D(T) ∇C)  −  ∂Ct/∂t  +  S_vol
 ```
 
-with q computed from `thermophysicalTransport` (Fourier conduction for a solid). The species and energy equations are solved sequentially within each PIMPLE corrector loop; the updated temperature is used to refresh D(T) before assembling the species equation.
+| Symbol | Meaning | Units |
+|--------|---------|-------|
+| C | Mobile species concentration | mol m⁻³ |
+| D(T) | Temperature-dependent diffusivity (Arrhenius) | m² s⁻¹ |
+| Ct | Trapped concentration (zero when trapping disabled) | mol m⁻³ |
+| S_vol | Optional uniform volumetric source | mol m⁻³ s⁻¹ |
+| U | Velocity field (if prescribed) | m s⁻¹ |
+
+### Species, momentum, and energy transport — fluid regions (`speciesFluid`)
+
+The `speciesFluid` module solves the coupled system of incompressible flow, scalar temperature, and species concentration. The full equation set solved in sequence within each PIMPLE outer corrector is:
+
+**Continuity (incompressible):**
+```
+∇·U = 0
+```
+
+**Momentum (PIMPLE):**
+```
+∂U/∂t  +  ∇·(UU)  =  −∇(p/ρ)  +  ∇·(ν∇U)
+```
+
+**Energy (scalar transport form):**
+```
+∂T/∂t  +  ∇·(UT)  =  ∇·(α ∇T)      α = κ / (ρ Cp)
+```
+
+**Species (advection-diffusion):**
+```
+∂C/∂t  +  ∇·(UC)  =  ∇·(D(T) ∇C)  −  ∂Ct/∂t  +  S_vol
+```
+
+| Symbol | Meaning | Units |
+|--------|---------|-------|
+| U | Velocity vector | m s⁻¹ |
+| p | Kinematic pressure (p/ρ) | m² s⁻² |
+| ν | Kinematic viscosity | m² s⁻¹ |
+| T | Temperature | K |
+| α = κ/(ρCp) | Thermal diffusivity | m² s⁻¹ |
+| κ | Thermal conductivity | W m⁻¹ K⁻¹ |
+| ρ | Density | kg m⁻³ |
+| Cp | Specific heat capacity | J kg⁻¹ K⁻¹ |
+| C, D(T), Ct, S_vol | As above | — |
+
+The PIMPLE loop first converges U and p (inherited from `incompressibleFluid`), then calls `thermophysicalPredictor()` which assembles and solves T followed by C. The updated T is used to refresh D(T) before solving the species equation.
+
+> **Numerical note:** The advection terms `fvm::div(phi, T)` and `fvm::div(phi, C)` create **asymmetric** coefficient matrices. The solver for these fields must be `PBiCGStab` with `DILU` preconditioner. Using `PCG` (symmetric-only) will abort with `Unknown asymmetric matrix solver PCG`. Also, the `"T.*"` wildcard in `fvSolution` is required because the PIMPLE final corrector creates a `TFinal` field.
+
+### Heat conduction — solid regions
+
+The energy equation in `speciesSolid` regions is inherited from the OpenFOAM `solid` base module:
+
+```
+∂(ρ e)/∂t  +  ∇·q  =  S_e      q = −κ(T) ∇T
+```
+
+Properties are read from `physicalProperties` via `solidThermo` (thermoType block with `heSolidThermo`, `constIsoSolid`, etc.).
 
 ### Arrhenius temperature dependence
 
-All material properties (diffusivity D, solubility Ks, dissociation rate Kd, recombination rate Kr) can follow the Arrhenius form
+All material properties (D, Ks, Kd, Kr) can follow:
 
 ```
 X(T)  =  X₀ · exp(−Ea / (R · T))
 ```
 
-where X₀ is the pre-exponential factor (carries the correct SI units), Ea is the activation energy [J mol⁻¹], and R = 8.314 J mol⁻¹ K⁻¹. Setting Ea = 0 gives a temperature-independent constant.
+Setting Ea = 0 gives a temperature-independent constant.
+
+```
+D { X0  [0 2 -1 0 0 0 0]  5.08e-7;   Ea  71334; }   // Forcey 1988 SS316
+```
 
 ### McNabb–Foster trapping
 
-When `trappingModel McNabbFoster` is selected, a trapped-species field Ct [mol m⁻³] evolves according to the single-trap ODE (Hattab et al. 2024, Eq. 2):
+When `trappingModel McNabbFoster` is selected, trapped concentration Ct evolves as:
 
 ```
 ∂Ct/∂t  =  (αt / N) · C · (nt − Ct)  −  αd(T) · Ct
 ```
 
-| Symbol | Meaning | Units |
-|--------|---------|-------|
-| N | molar trap-site density | mol m⁻³ |
-| nt = ft · N | available trap-site density | mol m⁻³ |
-| ft | trap fraction | — |
-| αt | trapping rate coefficient | s⁻¹ |
-| αd(T) = αd0 · exp(−ε / (kB T)) | detrapping rate (Arrhenius) | s⁻¹ |
-| ε | trap binding energy | eV |
-
-The ODE is discretised with a per-cell semi-implicit Euler step, which is unconditionally stable and bounded (0 ≤ Ct ≤ nt):
+Discretised with a per-cell semi-implicit Euler step (unconditionally stable, bounded 0 ≤ Ct ≤ nt):
 
 ```
 Ct^{n+1}  =  [Ct^n + Δt·(αt/N)·C·nt]  /  [1 + Δt·((αt/N)·C + αd)]
 ```
 
-The right-hand side `∂Ct/∂t` is subtracted from the mobile species equation as a sink term.
-
 ### Interface partition (Sieverts law)
 
-At a coupled interface between two diffusive regions the `sievertsCoupledMixed` boundary condition enforces:
+At a coupled interface, `sievertsCoupledMixed` enforces flux continuity and thermodynamic equilibrium. Three partition modes:
 
-1. **Flux continuity:** `D_s (∂C/∂n)_s = D_n (∂C/∂n)_n`
-2. **Thermodynamic equilibrium (linear / Sieverts):** `C_s / Ks_s = C_n / Ks_n`
+| `partition` keyword | Self regime | Neighbour regime | Condition |
+|---------------------|-------------|------------------|-----------|
+| `linear` (default) | Sieverts | Sieverts | C_s/Ks_s = C_n/Ks_n |
+| `quadratic` | Henry | Sieverts | C_s = Ks_s · (C_n/Ks_n)² |
+| `sqrt` | Sieverts | Henry | C_s = Ks_s · √(C_n/Ks_n) |
 
-This is implemented as a mixed (Robin) BC. Denoting the conductance products `selfKD = D_s·δ_s·(Ks_s/Ks_n)` and `nbrKD = D_n·δ_n` (where δ is the inverse cell-to-face distance), the coefficients are
+The mixed (Robin) BC coefficients are:
 
 ```
-refValue  =  (Ks_s / Ks_n) · C_{n,cell}
-refGrad   =  0
+refValue  =  (Ks_s / Ks_n) · C_n,cell           (linear)
 w         =  nbrKD / (nbrKD + selfKD)
+selfKD    =  D_s · δ_s⁻¹ · (Ks_s/Ks_n)          (linear)
+selfKD    =  D_s · δ_s⁻¹ · C_s,face/(2·C_n,cell)  (sqrt — linearised)
+selfKD    =  D_s · δ_s⁻¹ · 2·C_n,cell/C_s,face   (quadratic — linearised)
 ```
 
-so that `C_face = w · refValue + (1−w) · C_{s,cell}`, consistent with the standard conjugate-heat-transfer derivation applied to species transport.
-
-Three partition modes are supported:
-
-| `partition` keyword | Self regime | Neighbour regime | Interface condition |
-|---------------------|-------------|------------------|---------------------|
-| `linear` (default)  | Sieverts    | Sieverts         | `C_s/Ks_s = C_n/Ks_n` |
-| `quadratic`         | Henry       | Sieverts         | `C_s = Ks_s · (C_n/Ks_n)²` |
-| `sqrt`              | Sieverts    | Henry            | `C_s = Ks_s · √(C_n/Ks_n)` |
-
-The `quadratic` and `sqrt` modes use Picard (fixed-point) linearisation; PIMPLE outer iterations close the fixed point.
+The linearised selfKD for nonlinear modes ensures flux continuity at every Picard step and avoids a 6–7% systematic error that occurs when using the constant Ks ratio.
 
 ### Surface recombination / dissociation
 
-The `surfaceRecombination` boundary condition models gas-phase atom/molecule exchange at a free surface:
+The `surfaceRecombination` BC models gas-phase atom/molecule exchange at a free surface:
 
 ```
 D · ∂C/∂n  =  Kd(T) · p_gas  −  Kr(T) · C²
 ```
 
-| Symbol | Meaning | Units |
-|--------|---------|-------|
-| Kd(T)  | dissociation rate (Arrhenius) | mol/(m²·s·Pa) |
-| Kr(T)  | recombination rate (Arrhenius) | m⁴/(mol·s) |
-| p_gas  | imposed gas partial pressure   | Pa |
+Setting p_gas = 0 models a vacuum or purge side.
 
-Dictionary usage:
+### Membrane equilibrium BCs
+
+**`antoineEquilibrium`** — sets C at a membrane face from the local temperature using the Antoine equation for vapour pressure:
 
 ```
-boundaryField
-{
-    vacuumFace
-    {
-        type    surfaceRecombination;
-        Kd      { X0 1.0e-8;   Ea 20000; }   // Arrhenius pre-exp and Ea [J/mol]
-        Kr      { X0 1.0e-28;  Ea 60000; }
-        pGas    0;                             // [Pa] — 0 = vacuum / purge
-        value   uniform 0;
-    }
-}
+ln(p_vap [Pa])  =  A  −  B / (C_ant + T)
+C_face  =  p_vap / (R · T)   [mol/m³ ideal-gas]
 ```
 
-The C² nonlinearity is Picard-frozen at the previous cell concentration; PIMPLE outer iterations converge the solution.
+**`latentHeatFlux`** — mixed BC for T at a fluid-membrane face that adds the latent heat of evaporation/condensation to the thermal balance:
+
+```
+q_latent  =  J · Lvap · M        [W/m²]
+```
+
+where J [mol/(m²·s)] is the species flux through the membrane, Lvap [J/mol] is the molar latent heat, and M [kg/mol] is the molar mass. The refGrad contribution to the T equation is ±q_latent/κ_fluid.
 
 ### Surface molar flux post-processing
 
-The `speciesFlux` function object computes and writes the area-averaged molar flux
+The `speciesFlux` function object computes:
 
 ```
 J  =  −D · ∇C · n̂    [mol/(m²·s)]
 ```
 
-integrated over user-specified patches, without modifying the solver. The diffusivity field `D_<species>` is written automatically (it is a registered `AUTO_WRITE` field).
+integrated over user-specified patches.
 
 ```
 functions
@@ -139,83 +177,129 @@ functions
     {
         type        speciesFlux;
         libs        ("libspeciesPost.so");
-        region      wall;          // which region mesh to query
-        species     C_H2;          // concentration field name
+        region      wall;
+        species     C_H2;
         patches     (wall_to_hitec);
         writeControl writeTime;
     }
 }
 ```
 
-Output is written to `postProcessing/<name>/<time>/speciesFlux.dat` with columns: `time`, `<patch>_J [mol/(m²·s)]`, `<patch>_total [mol/s]`.
+Output: `postProcessing/<name>/<time>/speciesFlux.dat` with columns `time`, `<patch>_J`, `<patch>_total [mol/s]`.
+
+---
+
+## Solver selection guide
+
+### Use `speciesSolid` for fluid regions when
+
+The velocity field is **known in advance** (plug flow, analytically derived Poiseuille profile, or negligible flow effects). `speciesSolid` automatically detects a registered `U` field and adds `∇·(U C)` to the species equation and `∇·(ρU e)` to the energy equation. No U/p solve is performed.
+
+**Prescribe the velocity:** create a `0/<region>/U` file with `fixedValue` at all boundaries and `internalField uniform (Ux Uy 0)`. Set `divSchemes { div(phi,C_H2) Gauss upwind; }` and no `div(phi,U)` entry (there is no momentum equation).
+
+Appropriate when:
+- Channel Re is low and flow development can be neglected (plug-flow approximation)
+- The primary goal is species or heat transport; flow is a forcing term, not the unknown
+- Computational cost must be minimised (no pressure solve or momentum iterations)
+- Examples: case323 (FLiBe–SS316–Hitec HX, turbulent effective D absorbs flow effects), case325/326 (DCMD with plug-flow approximation for feed/permeate channels)
+
+### Use `speciesFluid` for fluid regions when
+
+The velocity and pressure fields must be **computed by solving the Navier-Stokes equations**. Required when:
+
+- The velocity profile is unknown (developing flow, arbitrary geometry, pressure-driven flow with unknown parabolic/turbulent profile)
+- The interaction between concentration gradients and flow (e.g. concentration polarisation driven by a developing boundary layer) must be captured accurately
+- You need the momentum equation to provide a self-consistent pressure field (for multi-region cases where the fluid pressure is relevant)
+- Buoyancy or other body forces affect the flow
+- Examples: case327 (DCMD with solved laminar channel flow), case328 (Poiseuille + Graetz validation), case329 (FLiBe channel with H2 source and permeation)
+
+**Required `physicalProperties` format for `speciesFluid`:**
+
+```
+viscosityModel  Newtonian;
+nu              [0 2 -1 0 0 0 0] 4.74e-7;   // read by incompressibleFluid base
+
+rho             983;        // kg/m³   — read by speciesFluid
+Cp              4183;       // J/(kg·K)
+mixture { transport { kappa 0.654; } }      // W/(m·K) — for latentHeatFlux BC
+```
+
+**Required `fvSolution` settings for `speciesFluid`:**
+
+```
+solvers
+{
+    "T.*"  { solver PBiCGStab; preconditioner DILU; tolerance 1e-10; relTol 0; }
+    "C_.*" { solver PBiCGStab; preconditioner DILU; tolerance 1e-10; relTol 0; }
+}
+```
 
 ---
 
 ## Library architecture
 
-The addon is split into four libraries and one solver module, built in dependency order:
+The addon is split into five libraries and two solver modules, built in dependency order:
 
 ```
 src/
 ├── speciesTransport/    →  libspeciesTransport.so
-│   ├── arrheniusProperty/   Temperature-dependent property X(T)=X₀exp(-Ea/RT)
+│   ├── arrheniusProperty/   Temperature-dependent property X(T) = X₀·exp(-Ea/RT)
 │   ├── speciesModel/        Per-region owner of C, D(T), Ks, source, trapping
 │   └── trappingModel/
-│       ├── noTrapping           No-op (default for trap-free regions)
-│       └── McNabbFoster         Single-trap model with semi-implicit ODE update
+│       ├── noTrapping           No-op (default)
+│       └── McNabbFoster         Single-trap model with semi-implicit ODE
 │
 ├── speciesCoupling/     →  libspeciesCoupling.so
-│   ├── speciesCoupledMixed/          Abstract base: neighbour-field mapping
-│   ├── sievertsCoupledMixed/         Sieverts/Henry interface partition
-│   └── surfaceRecombination/         Surface recombination/dissociation Robin BC
+│   ├── sievertsCoupledMixed/         Sieverts/Henry interface partition (3 modes)
+│   ├── surfaceRecombination/         Robin BC: D·∂C/∂n = Kd·p − Kr·C²
+│   ├── antoineEquilibriumFvPatch/    fixedValue from Antoine equation at membrane face
+│   └── latentHeatFluxFvPatch/        Mixed T BC adding q = J·Lvap·M
 │
 ├── speciesSolid/        →  libspeciesSolid.so  (solver module)
-│   └── speciesSolid             Extends the solid module with species transport
+│   └── speciesSolid     Extends solid module: species + optional advection when U registered
+│
+├── speciesFluid/        →  libspeciesFluid.so  (solver module)
+│   └── speciesFluid     Extends incompressibleFluid: full PIMPLE + T + C equations
 │
 └── speciesPost/         →  libspeciesPost.so  (post-processing)
-    └── speciesFlux              Function object: surface molar flux ∫ -D∇C·n̂ dA
+    └── speciesFlux      Function object: ∫ -D∇C·n̂ dA over user patches
 ```
 
-Each `controlDict` that uses this addon must load the required libraries:
+**Library loading in `controlDict`:**
 
 ```
 libs  ("libspeciesTransport.so"  "libspeciesCoupling.so"
        "libspeciesSolid.so"      "libspeciesPost.so");
 ```
 
+Add `"libspeciesFluid.so"` when any region uses `speciesFluid`.
+
 ---
 
 ## Build instructions
 
-**Prerequisites**
+**Prerequisites:** OpenFOAM 13 sourced (`source /opt/openfoam13/etc/bashrc`), standard C++ tools.
 
-- OpenFOAM 13 installed and sourced (e.g. `source /opt/openfoam13/etc/bashrc`)
-- Standard C++ build tools (`g++`, `make`)
-
-**Recommended location**
-
-Place the repository under `$WM_PROJECT_USER_DIR`:
+**Recommended location:**
 
 ```
 $WM_PROJECT_USER_DIR/
 └── multiSpeciesRegionFoam/
     ├── Allwmake
-    ├── Allwclean
-    ├── README.md
     ├── src/
     └── tutorials/
 ```
 
-**Build**
+**Build all libraries:**
 
 ```sh
 cd $WM_PROJECT_USER_DIR/multiSpeciesRegionFoam
 ./Allwmake -j4 2>&1 | tee build.log
 ```
 
-Compilation takes under a minute. The three libraries and one solver object are installed into `$FOAM_USER_LIBBIN` and `$FOAM_USER_APPBIN` automatically by `wmake`.
+Build order in `Allwmake`: `speciesTransport` → `speciesCoupling` → `speciesSolid` → `speciesFluid` → `speciesPost`. Compilation takes under two minutes. All `.so` objects are installed into `$FOAM_USER_LIBBIN`.
 
-**Clean**
+**Clean:**
 
 ```sh
 ./Allwclean
@@ -225,27 +309,58 @@ Compilation takes under a minute. The three libraries and one solver object are 
 
 ## Tutorials
 
-All tutorials are self-contained cases in `tutorials/`. Each directory contains an `Allrun` script, an `Allclean` script, and a `validation/` subdirectory with a Python script that reads the OpenFOAM output and compares it to the analytical solution.
+All tutorials are self-contained cases in `tutorials/`. Each contains `Allrun`, `Allclean`, and (for validation cases) a Python script in `validation/` that reads OpenFOAM output and compares to an analytical or benchmark solution. The script exits 0 on PASS and 1 on FAIL.
 
-| Case | Physics | Key feature | Solver |
-|------|---------|-------------|--------|
-| [case311-slab-diffusion](tutorials/case311-slab-diffusion/README.md) | 1-D diffusion, step BC, erfc front | First end-to-end run; temperature field used as species proxy | `solid` |
-| [case312-preloaded-slab](tutorials/case312-preloaded-slab/README.md) | 1-D diffusion, step IC, isolated slab | Fourier cosine-series solution; `setFields` for initial condition | `speciesSolid` |
-| [case313-trapping](tutorials/case313-trapping/README.md) | Diffusion + McNabb–Foster trapping | Two trapping regimes (weak / strong); breakthrough-time scaling | `speciesSolid` |
-| [case314-composite-membrane](tutorials/case314-composite-membrane/README.md) | Two-region diffusion, Sieverts interface | `sievertsCoupledMixed` BC; concentration jump at material interface | `speciesSolid` |
-| [case315-membrane-distillation](tutorials/case315-membrane-distillation/README.md) | 1-D isothermal vapour diffusion | Membrane distillation with constant D; linear steady-state profile | `speciesSolid` |
-| [case316-membrane-distillation-thermal](tutorials/case316-membrane-distillation-thermal/README.md) | Vapour diffusion with Arrhenius D(T) | Non-linear steady-state profile from temperature gradient; full energy coupling | `speciesSolid` |
-| [case317-reverse-osmosis](tutorials/case317-reverse-osmosis/README.md) | Solution-diffusion across two regions | Henry (Sieverts) partition at feed/membrane interface; two-region coupling | `speciesSolid` |
-| [case318-membrane-benchmark](tutorials/case318-membrane-benchmark/README.md) | 1-D transient diffusion, constant BCs | Code-to-code benchmark vs Pasler et al. and Fourier sine series; exact analytical solution | `speciesSolid` |
-| [case319-permeation-barrier](tutorials/case319-permeation-barrier/README.md) | WC coating + SS316 tube, Sieverts interface | Real Arrhenius D(T) for both materials; PRF ≈ 200; with/without coating comparison | `speciesSolid` |
-| [case320-shell-tube-hx](tutorials/case320-shell-tube-hx/README.md) | Conjugate heat + H₂ permeation, FLiBe–SS316–Hitec | Three-region coupled energy and species; Arrhenius D(T) from T gradient through composite wall | `speciesSolid` |
-| [case321-henry-law](tutorials/case321-henry-law/README.md) | Henry's law vs Sieverts' law interface partition | `partition sqrt` / `quadratic`; concentration jump up at interface; 23.6% flux difference | `speciesSolid` |
-| [case322-surface-recombination](tutorials/case322-surface-recombination/README.md) | Surface recombination/dissociation kinetics | `surfaceRecombination` Robin BC; Da=1 gives Cₛ=(√5−1)/2; 38.2% flux reduction vs Sieverts BC | `speciesSolid` |
+| Case | Physics summary | Key feature | Solver |
+|------|----------------|-------------|--------|
+| [case311-slab-diffusion](tutorials/case311-slab-diffusion/README.md) | 1-D diffusion, step BC, erfc front | Temperature field used as species proxy; validates pure-diffusion solver | `solid` |
+| [case312-preloaded-slab](tutorials/case312-preloaded-slab/README.md) | 1-D diffusion, non-zero IC, isolated slab | Fourier cosine-series analytical solution; `setFields` for IC | `speciesSolid` |
+| [case313-trapping](tutorials/case313-trapping/README.md) | Diffusion + McNabb–Foster trapping | Weak and strong trapping regimes; breakthrough-time scaling | `speciesSolid` |
+| [case314-composite-membrane](tutorials/case314-composite-membrane/README.md) | Two-region diffusion, Sieverts interface | `sievertsCoupledMixed` linear partition; concentration jump at interface | `speciesSolid` |
+| [case315-membrane-distillation](tutorials/case315-membrane-distillation/README.md) | Isothermal vapour diffusion through PTFE | Henry-law solubility; constant D; linear steady-state profile | `speciesSolid` |
+| [case316-membrane-distillation-thermal](tutorials/case316-membrane-distillation-thermal/README.md) | Vapour diffusion with Arrhenius D(T) | Non-linear profile from T gradient; full energy–species coupling | `speciesSolid` |
+| [case317-reverse-osmosis](tutorials/case317-reverse-osmosis/README.md) | Solution-diffusion, two regions | Henry partition at feed/membrane face (KH=0.5); two-region coupling | `speciesSolid` |
+| [case318-membrane-benchmark](tutorials/case318-membrane-benchmark/README.md) | 1-D transient diffusion, constant BCs | Code-to-code benchmark vs Pasler et al.; Fourier sine-series exact solution | `speciesSolid` |
+| [case319-permeation-barrier](tutorials/case319-permeation-barrier/README.md) | WC coating on SS316, real Arrhenius D(T) | PRF ≈ 200; with/without coating comparison | `speciesSolid` |
+| [case320-shell-tube-hx](tutorials/case320-shell-tube-hx/README.md) | Three-region HX: FLiBe \| SS316 \| Hitec | Conjugate heat + H₂ permeation; Arrhenius D(T) from T gradient; `speciesFlux` FO | `speciesSolid` |
+| [case321-henry-law](tutorials/case321-henry-law/README.md) | Henry vs Sieverts partition | `partition sqrt`/`quadratic`; C jumps UP at interface; 23.6% flux difference | `speciesSolid` |
+| [case322-surface-recombination](tutorials/case322-surface-recombination/README.md) | Surface recombination kinetics | Robin BC; Da=1 gives Cs=(√5−1)/2; 38.2% flux reduction | `speciesSolid` |
+| [case323-counterflow-hx](tutorials/case323-counterflow-hx/README.md) | 2-D counter-flow HX with H₂, prescribed flow | FLiBe–SS316–Hitec; turbulent effective D; advection via registered U in speciesSolid | `speciesSolid` |
+| [case324-dcmd-khalifa2017](tutorials/case324-dcmd-khalifa2017/README.md) | DCMD validation vs Khalifa 2017 | Single-region membrane; J_sim=31.1 vs J_exp=35 L/(m²·h) | `speciesSolid` |
+| [case325-dcmd-cfd](tutorials/case325-dcmd-cfd/README.md) | DCMD with explicit CFD temperature polarisation | Plug flow in fluid channels; `antoineEquilibrium` BC; three-region | `speciesSolid` |
+| [case326-dcmd-latent-heat](tutorials/case326-dcmd-latent-heat/README.md) | DCMD with latent heat coupling | `latentHeatFlux` BC adds q=J·Lvap·M to T balance at membrane face | `speciesSolid` |
+| [case327-dcmd-speciesFluid](tutorials/case327-dcmd-speciesFluid/README.md) | DCMD with fully solved incompressible flow | Feed/permeate use `speciesFluid` (PIMPLE U/p + T + C); membrane uses `speciesSolid` | `speciesFluid` + `speciesSolid` |
+| [case328-poiseuille-graetz](tutorials/case328-poiseuille-graetz/README.md) | `speciesFluid` solver validation | Poiseuille profile (L2 < 2%) + Graetz Nu∞ = 7.5407 (< 5% error) | `speciesFluid` |
+| [case329-flibe-channel](tutorials/case329-flibe-channel/README.md) | FLiBe channel with H₂ source → SS316 permeation | Uniform tritium source; Pe=1000; Sieverts interface; vacuum outer BC | `speciesFluid` + `speciesSolid` |
+
+---
+
+## Quick-start example
+
+```sh
+# 1. Source OpenFOAM
+source /opt/openfoam13/etc/bashrc
+
+# 2. Build libraries
+cd $WM_PROJECT_USER_DIR/multiSpeciesRegionFoam
+./Allwmake -j4
+
+# 3. Run a tutorial
+cd tutorials/case314-composite-membrane
+./Allrun
+
+# 4. Validate
+python3 validation/validate_composite_membrane.py
+```
 
 ---
 
 ## References
 
-- Hattab, N., Siriano, S., Giannetti, F. "An OpenFOAM multi-region solver for tritium transport modeling in fusion systems." *Fusion Engineering and Design* 202 (2024) 114362.
-- McNabb, A., Foster, P. K. "A new analysis of the diffusion of hydrogen in iron and ferritic steels." *Trans. Metall. Soc. AIME* 227 (1963) 618.
+- Hattab, N., Siriano, S., Giannetti, F. "An OpenFOAM multi-region solver for tritium transport modeling in fusion systems." *Fusion Engineering and Design* **202** (2024) 114362.
+- McNabb, A., Foster, P. K. "A new analysis of the diffusion of hydrogen in iron and ferritic steels." *Trans. Metall. Soc. AIME* **227** (1963) 618–627.
+- Forcey, K. S. et al. "Hydrogen transport and solubility in 316L and 1.4914 steels for fusion reactor applications." *J. Nucl. Mater.* **160** (1988) 153–159.
+- Romatoski, R. R., Hu, L. W. "Fluoride salt coolant properties for nuclear reactor applications: A review." *Nucl. Technol.* **205** (2019) 1367–1388.
+- Khalifa, A. et al. "Experimental and theoretical investigations on water desalination using direct contact membrane distillation." *Desalination* **404** (2017) 22–34.
+- Baker, R. W. *Membrane Technology and Applications*, 3rd ed. Wiley, 2012.
 - CFD Direct. "Modular Solvers in OpenFOAM." https://cfd.direct/openfoam/free-software/modular-solvers/

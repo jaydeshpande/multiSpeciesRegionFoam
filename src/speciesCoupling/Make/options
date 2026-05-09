@@ -6,7 +6,9 @@ EXE_INC = \
     -I../speciesTransport/trappingModel/trappingModel \
     -IspeciesCoupledMixedFvPatchScalarField \
     -IsievertsCoupledMixedFvPatchScalarField \
-    -IsurfaceRecombinationFvPatchScalarField
+    -IsurfaceRecombinationFvPatchScalarField \
+    -IantoineEquilibriumFvPatchScalarField \
+    -IlatentHeatFluxFvPatchScalarField
 
 LIB_LIBS = \
     -lfiniteVolume \

@@ -1,0 +1,19 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      momentumTransport;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Re = 20 — well within laminar regime.
+
+simulationType  laminar;
+
+// ************************************************************************* //

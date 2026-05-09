@@ -1,0 +1,89 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Single-region 2-D slit channel for Poiseuille + Graetz validation.
+//
+// Geometry:
+//   x: 0 to 1 mm   — channel width  W = 1 mm,  Nx = 40  (Δx = 0.025 mm)
+//   y: 0 to 50 mm  — channel length L = 50 mm, Ny = 500 (Δy = 0.1 mm)
+//   z: 0 to 1 mm   — 1 cell, empty (2-D)
+//
+// Operating conditions:
+//   Water at 20°C:  ν = 1.004e-6 m²/s,  ρ = 998 kg/m³
+//   Re = U_mean · D_h / ν = 20  →  U_mean = Re·ν/D_h = 20·1.004e-6/2e-3 = 0.01 m/s
+//   D_h = 2·W = 2 mm  (two-plate channel)
+//
+// Analytical benchmarks:
+//   Poiseuille: u_y(x) = 6·U_mean·x·(W−x)/W²,  u_max = 1.5·U_mean
+//   Pressure:   ∂p/∂y  = −12·ν·U_mean/W²  (kinematic)  = −0.12 m/s² per m
+//   Nusselt:    Nu_∞   = 7.5407  (constant wall-T, both walls, Poiseuille)
+//
+//   Hydrodynamic entry length:  L_h ≈ 0.04·Re·D_h = 1.6 mm  (fully dev. by row 16)
+//   Thermal entry length:       L_T ≈ 0.04·Re·Pr·D_h = 11.2 mm  (Pr = 7)
+//   → from y = 25 mm onward, both velocity and temperature profiles are
+//     fully developed.
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    (0   0  0)   // 0
+    (1   0  0)   // 1
+    (1  50  0)   // 2
+    (0  50  0)   // 3
+
+    (0   0  1)   // 4
+    (1   0  1)   // 5
+    (1  50  1)   // 6
+    (0  50  1)   // 7
+);
+
+blocks
+(
+    hex (0 1 2 3  4 5 6 7)  fluid  (40 500 1)  simpleGrading (1 1 1)
+);
+
+boundary
+(
+    inlet
+    {
+        type    patch;
+        faces   ( (0 1 5 4) );   // y = 0
+    }
+    outlet
+    {
+        type    patch;
+        faces   ( (3 7 6 2) );   // y = 50 mm
+    }
+    wall_left
+    {
+        type    wall;
+        faces   ( (0 4 7 3) );   // x = 0
+    }
+    wall_right
+    {
+        type    wall;
+        faces   ( (1 2 6 5) );   // x = 1 mm
+    }
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 3 2 1)   // z = 0
+            (4 5 6 7)   // z = 1 mm
+        );
+    }
+);
+
+// ************************************************************************* //

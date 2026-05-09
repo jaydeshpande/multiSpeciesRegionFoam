@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Three-region DCMD with explicit plug-flow in feed and permeate channels.
+//
+// Run time:
+//   Flow-through time (feed): L/U = 0.066/0.215 ≈ 0.31 s
+//   Run to t = 2 s (≈ 6.5 flow-through times) for quasi-steady T profile.
+//
+// Membrane time constants (τ_C = δ²/D̄ ≈ 1.5 ms, τ_T = 15 ms) are much
+// shorter than the channel flow-through time, so the membrane is always
+// in quasi-steady-state relative to the slowly-evolving T boundary conditions.
+//
+// Time step:
+//   CFL in channel: U_feed·dt/dy = 0.215×0.001/0.00066 ≈ 0.33  (safe for upwind)
+//   dt = 0.001 s gives ~300 steps per feed flow-through.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    feed        speciesSolid;
+    membrane    speciesSolid;
+    permeate    speciesSolid;
+}
+
+libs
+(
+    "libspeciesTransport.so"
+    "libspeciesCoupling.so"
+    "libspeciesSolid.so"
+);
+
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         2.0;
+
+deltaT          0.001;
+
+writeControl    runTime;
+writeInterval   0.2;
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable yes;
+
+// ************************************************************************* //

@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// PTFE 0.45 µm hydrophobic membrane — same as case324.
+// Effective properties for 80% air-filled porous PTFE (porosity ε = 0.80):
+//   ρ_eff = (1−ε) × ρ_PTFE = 0.20 × 2200 = 440 kg/m³
+//   Cv    = Cv_PTFE = 1000 J/(kg·K)
+//   κ_eff = ε×κ_air + (1−ε)×κ_PTFE = 0.80×0.025 + 0.20×0.25 = 0.07 W/(m·K)
+//   α     = κ/(ρ·Cv) = 0.07/(440×1000) = 1.59×10⁻⁷ m²/s
+//
+// No velocity field in the membrane — pure conduction + species diffusion.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       100;       // g/mol — C2F4 repeat unit of PTFE
+    }
+    transport
+    {
+        kappa           0.07;      // W/(m·K) — effective (see above)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1000;      // J/(kg·K) — PTFE solid
+    }
+    equationOfState
+    {
+        rho             440;       // kg/m³ — effective (see above)
+    }
+}
+
+// ************************************************************************* //

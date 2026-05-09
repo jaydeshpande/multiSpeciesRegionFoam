@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case324-dcmd-khalifa2017 / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Temperature field in the PTFE membrane.
+//
+// Boundary temperatures account for thermal resistance of the DCMD module:
+//   T_mf = 328 K (55°C) — membrane hot face (feed-side interface)
+//   T_mp = 299 K (26°C) — membrane cold face (permeate-side interface)
+//
+// Temperature polarization coefficient TPC = (T_mf − T_mp)/(T_f − T_p)
+//                                          = (55 − 26)/(60 − 20) = 0.725
+//
+// At steady state T(x) is linear: T_ss(x) = 328 − (29/154e-6)·x  [K].
+// Thermal time constant τ_T ≈ 0.015 s  (δ²/(π²·α),  α = 1.59e-7 m²/s).
+// Initial condition uniform 313.5 K (arithmetic mean of the two faces).
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 313.5;
+
+boundaryField
+{
+    hot_face
+    {
+        type        fixedValue;
+        value       uniform 328;   // K  (55°C — feed-side membrane surface)
+    }
+
+    cold_face
+    {
+        type        fixedValue;
+        value       uniform 299;   // K  (26°C — permeate-side membrane surface)
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

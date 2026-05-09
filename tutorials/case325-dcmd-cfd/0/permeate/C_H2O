@@ -1,0 +1,49 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/permeate";
+    object      C_H2O;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dummy C_H2O field — see constant/feed/speciesProperties.
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    permeate_inlet
+    {
+        type        zeroGradient;
+    }
+
+    permeate_outlet
+    {
+        type        zeroGradient;
+    }
+
+    permeate_outer
+    {
+        type        zeroGradient;
+    }
+
+    permeate_to_membrane
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

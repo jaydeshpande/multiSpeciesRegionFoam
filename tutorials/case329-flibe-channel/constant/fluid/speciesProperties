@@ -1,0 +1,48 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen transport in FLiBe molten salt at 873 K.
+//
+// Molecular diffusivity of H in FLiBe (Fukada et al.): D ≈ 5e-9 m²/s.
+// Enhanced to 5e-8 m²/s here for tutorial purposes so that the transverse
+// concentration gradient and permeation flux are visible within a 2000 s run.
+//
+// Hydrogen source: S = 1e-5 mol/(m³·s), uniform throughout the FLiBe volume.
+// Represents tritium breeding by neutron capture: Li-6 + n → T + α.
+//
+// Ks set equal to solid value (1000 mol/m³/Pa^0.5) so there is no
+// concentration discontinuity at the FLiBe–SS316 interface (Ks_ratio = 1).
+
+species     C_H2;
+
+D
+{
+    X0      [0 2 -1 0 0 0 0] 5e-8;   // m²/s  (Ea=0: constant at 873 K)
+    Ea      0;
+}
+
+Ks
+{
+    X0      [0 -3 0 0 1 0 0] 1000;   // mol/m³  (pseudo-Sieverts for linear partition)
+    Ea      0;
+}
+
+source      1e-5;   // mol/(m³·s)  uniform volumetric hydrogen production
+
+trappingModel
+{
+    type    noTrapping;
+}
+
+// ************************************************************************* //

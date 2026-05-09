@@ -1,0 +1,6 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+\*---------------------------------------------------------------------------*/
+FoamFile { format ascii; class dictionary; object fvModels; }
+// No fvModels for this region.

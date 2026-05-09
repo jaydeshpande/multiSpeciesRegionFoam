@@ -1,0 +1,32 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/permeate";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dummy species field — see constant/feed/speciesProperties for explanation.
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-10;
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

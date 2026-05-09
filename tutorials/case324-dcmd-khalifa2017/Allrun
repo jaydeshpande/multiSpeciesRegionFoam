@@ -1,0 +1,35 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Case 3.2.4 — DCMD validation against Khalifa et al., Desalination 404 (2017) 22-34
+# multiSpeciesRegionFoam tutorial series
+#
+# Validates 1D water-vapour diffusion through a PTFE 0.45 µm hydrophobic membrane
+# against experimental permeate flux data.
+#
+# Physics:
+#   - Combined Knudsen + molecular diffusion  (D_eff ≈ 1.7e-5 m²/s at 314 K)
+#   - Arrhenius D(T) derived from pore transport model  (X0=6.9e-5, Ea=3700 J/mol)
+#   - Boundary concentrations from Antoine vapour-pressure equation
+#     at membrane face temperatures (temperature polarization TPC ≈ 0.73)
+#   - Baseline: T_feed = 60°C, T_perm = 20°C, Q_f = 4.65 L/min, Q_p = 3.65 L/min
+#
+# Validation:
+#   - Steady-state C_H2O profile vs. analytical (constant-flux integral)
+#   - Permeate flux J vs. Khalifa et al. 2017 Fig. 4 experimental data
+#
+# Solver:  foamMultiRun (single region "membrane", speciesSolid)
+# Runtime: ~30 seconds on a single core
+
+runApplication blockMesh
+
+mkdir -p constant/membrane
+mv constant/polyMesh constant/membrane/polyMesh
+
+runApplication foamMultiRun
+
+echo
+echo "==> Compare with Khalifa et al. (2017) experimental data:"
+echo "    python3 validation/dcmd_khalifa2017_compare.py"
+echo

@@ -1,0 +1,47 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Water vapour transport through PTFE 0.45 µm membrane — identical to case324.
+// Arrhenius D_eff(T) fitted to Knudsen+molecular diffusivity model:
+//   D_eff = ε × 1/(1/D_K + 1/D_M)
+//   D_K(T) = (2r/3)·sqrt(8RT/πM),  r = 189.5 nm
+//   D_M(T) = 2.26e-5·(T/273.15)^1.81
+//
+//   D(T) = 6.9e-5 · exp(-3700 / (8.314·T))   [m²/s]
+//   D(299 K) = 1.57e-5  (cold face)
+//   D(313.5K) = 1.67e-5 (midpoint)
+//   D(328 K) = 1.79e-5  (hot face)
+//
+// In this 3-region case the boundary conditions for C_H2O at both membrane
+// faces are computed dynamically from the Antoine equation using the COUPLED
+// temperature T at those faces (codedFixedValue BCs in 0/membrane/C_H2O).
+// Temperature polarisation therefore emerges from the CFD solution rather
+// than being imposed analytically.
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 6.9e-5;   // m²/s
+    Ea          3700;                         // J/mol  (D increases with T)
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

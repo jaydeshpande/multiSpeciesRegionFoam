@@ -1,0 +1,82 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-8;
+        relTol          0.01;
+    }
+
+    pFinal
+    {
+        $p;
+        relTol          0;
+    }
+
+    U
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-8;
+        relTol          0.01;
+    }
+
+    UFinal
+    {
+        $U;
+        relTol          0;
+    }
+
+    "T.*"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-10;
+        relTol          0;
+    }
+
+    "C_.*"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-10;
+        relTol          0;
+    }
+}
+
+PIMPLE
+{
+    nOuterCorrectors        1;
+    nCorrectors             2;
+    nNonOrthogonalCorrectors 0;
+
+    residualControl
+    {
+        "T.*"   1e-8;
+        "C_.*"  1e-8;
+    }
+}
+
+relaxationFactors
+{
+    equations
+    {
+        ".*"    1;
+    }
+}
+
+// ************************************************************************* //

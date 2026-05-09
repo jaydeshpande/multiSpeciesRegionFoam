@@ -1,0 +1,10 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/CleanFunctions"
+
+cleanCase
+rm -rf constant/fluid/polyMesh
+rm -rf constant/solid/polyMesh
+rm -rf constant/polyMesh
+rm -f  log.*
+rm -f  foam.foam

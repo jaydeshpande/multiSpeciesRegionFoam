@@ -1,0 +1,37 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// FLiBe (66.7% LiF + 33.3% BeF2) at 873 K (600°C).
+// Source: Romatoski & Hu, Nucl. Technol. 205 (2019).
+//   ρ = 1940 kg/m³,  μ = 5.63e-3 Pa·s  → ν = 2.9e-6 m²/s
+//   Cp = 2386 J/(kg·K),  k = 1.1 W/(m·K)
+//
+// Newtonian viscosityModel entries are read by the incompressibleFluid base
+// class.  rho, Cp, and mixture.transport.kappa are read by speciesFluid.
+
+viscosityModel  Newtonian;
+nu              [0 2 -1 0 0 0 0] 2.9e-6;
+
+rho             1940;
+Cp              2386;
+
+mixture
+{
+    transport
+    {
+        kappa   1.1;
+    }
+}
+
+// ************************************************************************* //

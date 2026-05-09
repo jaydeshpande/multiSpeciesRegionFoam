@@ -1,0 +1,42 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/feed";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hot salt water (2 g/L NaCl) — properties at 60°C (333 K).
+//   ν   = μ/ρ = 4.66×10⁻⁴/983 = 4.74×10⁻⁷ m²/s
+//   ρ   = 983    kg/m³
+//   Cp  = 4183   J/(kg·K)
+//   κ   = 0.654  W/(m·K)
+//   α   = κ/(ρ·Cp) = 1.59×10⁻⁷ m²/s
+//   Re  = ρ·U·D_h/μ ≈ 3750  (transitional; laminar model used)
+//
+// viscosityModel/nu: required by incompressibleFluid base class (PIMPLE loop).
+// rho, Cp: read by speciesFluid for the energy equation.
+// mixture.transport.kappa: read by latentHeatFlux BC at feed_to_membrane.
+
+viscosityModel  Newtonian;
+
+nu              [0 2 -1 0 0 0 0] 4.74e-7;
+
+rho             983;
+Cp              4183;
+
+mixture
+{
+    transport
+    {
+        kappa   0.654;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / solid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/solid";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SS316 at uniform 873 K.  No thermal sources or coupling effects in this
+// isothermal case, so T remains constant throughout.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 873;
+
+boundaryField
+{
+    solid_bottom
+    {
+        type        zeroGradient;
+    }
+
+    solid_top
+    {
+        type        zeroGradient;
+    }
+
+    solid_outer
+    {
+        type        fixedValue;
+        value       uniform 873;
+    }
+
+    solid_to_fluid
+    {
+        type        fixedValue;
+        value       uniform 873;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

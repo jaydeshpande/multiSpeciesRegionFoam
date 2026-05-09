@@ -1,0 +1,24 @@
+EXE_INC = \
+    -I$(WM_PROJECT_DIR)/applications/modules/incompressibleFluid \
+    -I$(WM_PROJECT_DIR)/applications/modules/fluidSolver \
+    -I../speciesTransport/arrheniusProperty \
+    -I../speciesTransport/trappingModel/trappingModel \
+    -I../speciesTransport/trappingModel/noTrapping \
+    -I../speciesTransport/trappingModel/McNabbFoster \
+    -I../speciesTransport/speciesModel \
+    -I$(LIB_SRC)/physicalProperties/lnInclude \
+    -I$(LIB_SRC)/MomentumTransportModels/momentumTransportModels/lnInclude \
+    -I$(LIB_SRC)/MomentumTransportModels/incompressible/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude
+
+LIB_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
+    -lincompressibleFluid \
+    -lspeciesTransport \
+    -lfiniteVolume \
+    -lmeshTools \
+    -lsampling \
+    -lfvModels \
+    -lfvConstraints

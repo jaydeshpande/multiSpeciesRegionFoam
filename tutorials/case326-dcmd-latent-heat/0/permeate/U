@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/permeate";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Plug-flow velocity in −y (counter-flow) direction.
+// Q_perm = 3.65 L/min / 3 channels = 1.217 L/min per channel
+// U_perm = Q/A = (1.217e-3/60) / 120e-6 = 0.169 m/s (in −y direction)
+//
+// Re_perm = ρ·U·D_h/μ = 998×0.169×0.00828/0.001002 ≈ 1393
+//
+// Counter-flow: inlet at y = 66 mm (permeate_inlet patch), outlet at y = 0.
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 -0.169 0);
+
+boundaryField
+{
+    permeate_inlet
+    {
+        type        fixedValue;
+        value       uniform (0 -0.169 0);   // inlet at y = 66 mm, flow in −y
+    }
+
+    permeate_outlet
+    {
+        type        zeroGradient;
+    }
+
+    permeate_outer
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);
+    }
+
+    permeate_to_membrane
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);    // no normal flow into membrane
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

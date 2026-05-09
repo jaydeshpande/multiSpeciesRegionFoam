@@ -1,0 +1,150 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Three-region DCMD case with explicit flow:
+//   feed channel | PTFE membrane | permeate channel
+//
+// Cross-channel direction (x):
+//   x =  0       to  5     mm — feed channel     ( 5 mm,  20 cells, graded)
+//   x =  5       to  5.154 mm — PTFE membrane    (0.154 mm, 10 cells, uniform)
+//   x =  5.154   to 10.154 mm — permeate channel ( 5 mm,  20 cells, graded)
+//
+// Axial flow direction (y):
+//   y = 0 to 66 mm  (100 cells, uniform, Δy = 0.66 mm)
+//
+// Out-of-plane (z): 1 mm, 1 cell (2-D planar)
+//
+// ── Mesh grading ──────────────────────────────────────────────────────────
+//
+// Feed:      simpleGrading (0.05 1 1)
+//            last/first = 0.05 → finest cells at x = 5 mm (membrane face)
+//            first cell ≈ 0.45 mm, last cell ≈ 0.023 mm
+//
+// Membrane:  uniform (1 1 1) — 15.4 µm cells resolving the thin film
+//
+// Permeate:  simpleGrading (20 1 1)
+//            last/first = 20 → finest cells at x = 5.154 mm (membrane face)
+//            first cell ≈ 0.023 mm, last cell ≈ 0.46 mm
+//
+// ── Flow conditions ───────────────────────────────────────────────────────
+//
+//   Feed:    U = (0, +0.215, 0) m/s  (hot salt water, T_inlet = 333 K = 60°C)
+//   Permeate:U = (0, -0.169, 0) m/s  (cold fresh water, T_inlet = 293 K = 20°C)
+//            Counter-flow: permeate inlet is at y = 66 mm.
+//
+// splitMeshRegions -cellZones creates coupled patches:
+//   feed_to_membrane / membrane_to_feed     (at x = 5 mm)
+//   membrane_to_permeate / permeate_to_membrane  (at x = 5.154 mm)
+
+convertToMeters 1e-3;   // coordinates in mm
+
+vertices
+(
+    //  y = 0, z = 0
+    ( 0       0  0)    //  0 — feed outer,          y=0, z=0
+    ( 5       0  0)    //  1 — feed/membrane,        y=0, z=0
+    ( 5.154   0  0)    //  2 — membrane/permeate,    y=0, z=0
+    (10.154   0  0)    //  3 — permeate outer,       y=0, z=0
+
+    //  y = 66 mm, z = 0
+    ( 0      66  0)    //  4
+    ( 5      66  0)    //  5
+    ( 5.154  66  0)    //  6
+    (10.154  66  0)    //  7
+
+    //  y = 0, z = 1 mm
+    ( 0       0  1)    //  8
+    ( 5       0  1)    //  9
+    ( 5.154   0  1)    // 10
+    (10.154   0  1)    // 11
+
+    //  y = 66 mm, z = 1 mm
+    ( 0      66  1)    // 12
+    ( 5      66  1)    // 13
+    ( 5.154  66  1)    // 14
+    (10.154  66  1)    // 15
+);
+
+blocks
+(
+    // Feed channel — graded toward membrane at x = 5 mm
+    // simpleGrading (0.05 1 1): last/first = 0.05 → fine at high x
+    hex (0 1 5 4   8 9 13 12)   feed     (20 100 1) simpleGrading (0.05 1 1)
+
+    // PTFE membrane — uniform 15.4 µm cells
+    hex (1 2 6 5   9 10 14 13)  membrane (10 100 1) simpleGrading (1 1 1)
+
+    // Permeate channel — graded toward membrane at x = 5.154 mm
+    // simpleGrading (20 1 1): last/first = 20 → fine at low x
+    hex (2 3 7 6  10 11 15 14)  permeate (20 100 1) simpleGrading (20 1 1)
+);
+
+boundary
+(
+    feed_outer
+    {
+        type    patch;
+        faces   ( (0 8 12 4) );       // x = 0, feed adiabatic outer wall
+    }
+    permeate_outer
+    {
+        type    patch;
+        faces   ( (3 7 15 11) );      // x = 10.154 mm, permeate outer wall
+    }
+
+    feed_inlet
+    {
+        type    patch;
+        faces   ( (0 1 9 8) );        // y = 0, feed inlet (+y flow)
+    }
+    feed_outlet
+    {
+        type    patch;
+        faces   ( (4 12 13 5) );      // y = 66 mm, feed outlet
+    }
+
+    membrane_inlet
+    {
+        type    patch;
+        faces   ( (1 2 10 9) );       // y = 0, membrane axial end
+    }
+    membrane_outlet
+    {
+        type    patch;
+        faces   ( (5 13 14 6) );      // y = 66 mm, membrane axial end
+    }
+
+    permeate_outlet
+    {
+        type    patch;
+        faces   ( (2 3 11 10) );      // y = 0, permeate outlet (−y flow)
+    }
+    permeate_inlet
+    {
+        type    patch;
+        faces   ( (6 14 15 7) );      // y = 66 mm, permeate inlet (−y counter-flow)
+    }
+
+    sides
+    {
+        type    empty;
+        faces
+        (
+            (0 4 5 1)    (8 9 13 12)    // z-faces — feed
+            (1 5 6 2)    (9 10 14 13)   // z-faces — membrane
+            (2 6 7 3)    (10 11 15 14)  // z-faces — permeate
+        );
+    }
+);
+
+// ************************************************************************* //

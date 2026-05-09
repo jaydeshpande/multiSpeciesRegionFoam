@@ -1,0 +1,55 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Feed channel: hot salt water at 333 K, plug flow at 0.215 m/s in +y.
+// Cell Peclet numbers:
+//   Thermal:  Pe_T = U·dy/α ≈ 892  — linearUpwind reduces numerical diffusion
+//   Species:  D_H2O ≈ 1e-10 → Pe >> 1  → upwind required (no linearUpwind for C)
+//
+// div(rhoPhi,e): linearUpwind eliminates the D_num≈452·α axial smearing that
+//   pure upwind adds, which was causing 4× underprediction of wall heat transfer.
+// div(phi,C_H2O): species Pe is astronomical → upwind is mandatory.
+
+ddtSchemes
+{
+    default     Euler;
+}
+
+gradSchemes
+{
+    default     Gauss linear;
+}
+
+divSchemes
+{
+    default             none;
+    div(rhoPhi,e)       Gauss linearUpwind grad(e);
+    div(phi,C_H2O)      Gauss upwind;
+}
+
+laplacianSchemes
+{
+    default     Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default     linear;
+}
+
+snGradSchemes
+{
+    default     corrected;
+}
+
+// ************************************************************************* //

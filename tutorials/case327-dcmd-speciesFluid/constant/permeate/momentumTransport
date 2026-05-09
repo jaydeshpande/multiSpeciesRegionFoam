@@ -1,0 +1,19 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/permeate";
+    object      momentumTransport;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Permeate Re ≈ 1393 — laminar.
+
+simulationType  laminar;
+
+// ************************************************************************* //

@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case324-dcmd-khalifa2017 / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/membrane";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// PTFE 0.45 µm membrane — effective (volume-averaged) thermal properties.
+//
+// Membrane porosity ε = 0.80 (80% air, 20% PTFE solid).
+//
+// Effective thermal conductivity (parallel model, air-filled pores):
+//   κ_eff = ε·κ_air + (1−ε)·κ_PTFE = 0.80×0.026 + 0.20×0.25 = 0.071 W/(m·K)
+//
+// Effective volumetric heat capacity:
+//   ρ·Cv_eff = (1−ε)·ρ_PTFE·Cv_PTFE + ε·ρ_air·Cv_air
+//            = 0.20×2200×1000 + 0.80×1.2×1005 ≈ 441 000 J/(m³·K)
+//   → use rho = 440 kg/m³, Cv = 1000 J/(kg·K)
+//
+// Thermal diffusivity: α = κ/(ρ·Cv) = 0.07/(440×1000) = 1.59e-7 m²/s
+// Thermal time constant: τ_T = δ²/(π²·α) = (154e-6)²/(9.87×1.59e-7) ≈ 0.015 s
+// Species time constant: τ_C = δ²/D̄ = (154e-6)²/1.67e-5 ≈ 1.4e-3 s
+//
+// Temperature equilibrates on ~15 ms; species on ~1.4 ms.  Run to t = 0.5 s.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       100;    // kg/kmol (approximate for PTFE repeat unit C2F4)
+    }
+    transport
+    {
+        kappa           0.07;   // W/(m·K) — effective (ε=0.80, air-filled pores)
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              1000;   // J/(kg·K) — PTFE solid
+    }
+    equationOfState
+    {
+        rho             440;    // kg/m³ — effective (0.20×2200 kg/m³ solid fraction)
+    }
+}
+
+// ************************************************************************* //

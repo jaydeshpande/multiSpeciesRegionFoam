@@ -11,7 +11,7 @@
 #include "fvmDdt.H"
 #include "fvmLaplacian.H"
 #include "fvmDiv.H"
-#include "fvcFlux.H"
+#include "fvc.H"
 #include "volFields.H"
 #include "addToRunTimeSelectionTable.H"
 
@@ -63,6 +63,16 @@ void Foam::solvers::speciesSolid::thermophysicalPredictor()
          ==
             fvModels().source(rho, e)
         );
+
+        // Add thermal advection when velocity field is registered.
+        // Uses the face mass flux rho_f * phi_vol so that fvm::div(rhoPhi,e)
+        // has units [kg/s * J/kg / m³ = W/m³] matching fvm::ddt(rho,e).
+        if (mesh_.foundObject<volVectorField>("U"))
+        {
+            const volVectorField& Utherm =
+                mesh_.lookupObject<volVectorField>("U");
+            eEqn += fvm::div(fvc::interpolate(rho) * fvc::flux(Utherm), e);
+        }
 
         eEqn.relax();
         fvConstraints().constrain(eEqn);

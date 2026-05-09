@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/fluid";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Plug-flow inlet at 0.01 m/s in +y direction.
+// Re = 20, D_h = 2 mm, ν = 1.004e-6 m²/s.
+// The hydrodynamic entry length L_h = 0.04·Re·D_h = 1.6 mm.
+// By y = 5 mm the Poiseuille profile is fully established.
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0.01 0);
+
+boundaryField
+{
+    inlet
+    {
+        type        fixedValue;
+        value       uniform (0 0.01 0);
+    }
+
+    outlet
+    {
+        type        zeroGradient;
+    }
+
+    wall_left
+    {
+        type        noSlip;
+    }
+
+    wall_right
+    {
+        type        noSlip;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

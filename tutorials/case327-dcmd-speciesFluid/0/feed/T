@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case326-dcmd-latent-heat / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/feed";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hot feed water enters at 333 K (60°C).
+// latentHeatFlux replaces coupledTemperature at the membrane interface.
+// It enforces the same thermal continuity as coupledTemperature, but also
+// subtracts the evaporative heat flux J·L_vap·M from the feed surface.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 333;
+
+boundaryField
+{
+    feed_inlet
+    {
+        type        fixedValue;
+        value       uniform 333;    // T_feed = 60°C
+    }
+
+    feed_outlet
+    {
+        type        zeroGradient;
+    }
+
+    feed_outer
+    {
+        type        zeroGradient;   // adiabatic outer wall
+    }
+
+    feed_to_membrane
+    {
+        type        latentHeatFlux;
+        Lvap        2.45e6;         // J/kg  latent heat of water at ~60°C
+        M           0.018;          // kg/mol  molar mass of water
+        CName       C_H2O;          // vapour concentration field in membrane
+        side        evaporation;    // heat sink on feed side
+        value       uniform 333;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

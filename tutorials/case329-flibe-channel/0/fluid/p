@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Kinematic pressure [m²/s²].  Reference pressure zero at outlet.
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    fluid_bottom
+    {
+        type        zeroGradient;
+    }
+
+    fluid_top
+    {
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    fluid_centerline
+    {
+        type        zeroGradient;
+    }
+
+    fluid_to_solid
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case324-dcmd-khalifa2017
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Case 3.2.4 — DCMD validation against Khalifa et al. (2017)
+//
+// 1D diffusion of water vapour through PTFE 0.45 µm hydrophobic membrane.
+// Validates multiSpeciesRegionFoam against experimental permeate flux data
+// from: Khalifa et al., Desalination 404 (2017) 22-34.
+//
+// Time scales (δ = 154 µm, D̄ = 1.67e-5 m²/s, α = 1.59e-7 m²/s):
+//   τ_C (species) = δ²/D̄ ≈ 1.4e-3 s
+//   τ_T (thermal) = δ²/(π²·α) ≈ 0.015 s
+//
+// Run to t = 0.5 s (33×τ_T) — steady state fully established.
+// Write every 0.05 s (10 snapshots) for convergence monitoring.
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    membrane    speciesSolid;
+}
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         5;
+
+deltaT          0.01;
+
+writeControl    adjustableRunTime;
+writeInterval   1;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+adjustTimeStep  no;
+
+libs
+(
+    "libspeciesSolid.so"
+    "libspeciesTransport.so"
+);
+
+// ************************************************************************* //

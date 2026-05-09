@@ -1,0 +1,21 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# case325 — Three-region DCMD with explicit plug-flow
+#
+# Geometry: feed channel (5 mm) | PTFE membrane (154 µm) | permeate channel (5 mm)
+# Flow:  +y at 0.215 m/s in feed, −y at 0.169 m/s in permeate (counter-flow)
+# T_feed inlet = 333 K (60°C), T_perm inlet = 293 K (20°C)
+#
+# splitMeshRegions -cellZones splits the blockMesh into three regions:
+#   feed / membrane / permeate
+# with coupled patches at the fluid-membrane interfaces.
+#
+# speciesSolid adds thermal advection (fvm::div(rhoPhi,e)) when U is registered,
+# so temperature polarisation develops naturally in the channels — no analytical
+# TPC pre-computation needed (compare with case324-dcmd-khalifa2017).
+
+runApplication blockMesh
+runApplication splitMeshRegions -cellZones -overwrite
+runApplication foamMultiRun

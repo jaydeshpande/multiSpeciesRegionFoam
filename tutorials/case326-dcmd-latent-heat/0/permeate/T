@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case326-dcmd-latent-heat / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/permeate";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Cold permeate enters at 293 K (20°C) from y = 66 mm (counter-flow).
+// latentHeatFlux replaces coupledTemperature at the membrane interface.
+// It enforces thermal continuity and adds the condensation heat flux
+// J·L_vap·M to the permeate surface.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 293;
+
+boundaryField
+{
+    permeate_inlet
+    {
+        type        fixedValue;
+        value       uniform 293;    // T_perm = 20°C
+    }
+
+    permeate_outlet
+    {
+        type        zeroGradient;
+    }
+
+    permeate_outer
+    {
+        type        zeroGradient;   // adiabatic outer wall
+    }
+
+    permeate_to_membrane
+    {
+        type        latentHeatFlux;
+        Lvap        2.45e6;         // J/kg  latent heat of water at ~60°C
+        M           0.018;          // kg/mol  molar mass of water
+        CName       C_H2O;          // vapour concentration field in membrane
+        side        condensation;   // heat source on permeate side
+        value       uniform 293;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

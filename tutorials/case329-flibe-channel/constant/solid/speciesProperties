@@ -1,0 +1,46 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / solid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hydrogen transport in SS316 at 873 K.
+//
+// Forcey 1988 Arrhenius: D₀ = 5.08e-7 m²/s, Ea = 71334 J/mol
+//   → D(873 K) ≈ 2.7e-11 m²/s  (τ_slab = d²/D ≈ 1.5e8 s, impractical for tutorial)
+//
+// Using D = 5e-9 m²/s (accelerated) so steady-state permeation is visible
+// within the 2000 s run (τ_slab = (2e-3)²/5e-9 = 800 s).
+//
+// Ks matches FLiBe value → linear (no-jump) interface partition.
+
+species     C_H2;
+
+D
+{
+    X0      [0 2 -1 0 0 0 0] 5e-9;   // m²/s  (Ea=0: constant)
+    Ea      0;
+}
+
+Ks
+{
+    X0      [0 -3 0 0 1 0 0] 1000;   // mol/m³
+    Ea      0;
+}
+
+source      0;
+
+trappingModel
+{
+    type    noTrapping;
+}
+
+// ************************************************************************* //

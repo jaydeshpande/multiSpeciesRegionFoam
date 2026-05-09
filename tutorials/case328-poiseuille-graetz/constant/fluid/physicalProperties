@@ -1,0 +1,37 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Water at 20°C (293 K).
+//   ν   = 1.004e-6 m²/s   → Re = 20 with U_mean = 0.01 m/s, D_h = 2 mm
+//   ρ   = 998    kg/m³
+//   Cp  = 4182   J/(kg·K)
+//   κ   = 0.598  W/(m·K)
+//   α   = κ/(ρ·Cp) = 1.43e-7 m²/s  → Pr = ν/α = 7.0
+
+viscosityModel  Newtonian;
+
+nu              [0 2 -1 0 0 0 0] 1.004e-6;
+
+rho             998;
+Cp              4182;
+
+mixture
+{
+    transport
+    {
+        kappa   0.598;
+    }
+}
+
+// ************************************************************************* //

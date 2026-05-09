@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case326-dcmd-latent-heat / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Membrane temperature.
+// latentHeatFlux with source self reads C_H2O from the membrane's own Antoine BC
+// to compute J, then applies the same heat-flux correction as the fluid side.
+// This replaces coupledTemperature so both sides of each interface use the same
+// BC type, avoiding the coupledTemperature paired-type enforcement.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 313;
+
+boundaryField
+{
+    membrane_to_feed
+    {
+        type        latentHeatFlux;
+        Lvap        2.45e6;         // J/kg
+        M           0.018;          // kg/mol
+        CName       C_H2O;
+        side        evaporation;    // feed side: heat sink
+        source      self;           // read C/D from membrane's own patch
+        value       uniform 333;
+    }
+
+    membrane_to_permeate
+    {
+        type        latentHeatFlux;
+        Lvap        2.45e6;         // J/kg
+        M           0.018;          // kg/mol
+        CName       C_H2O;
+        side        condensation;   // permeate side: heat source
+        source      self;           // read C/D from membrane's own patch
+        value       uniform 293;
+    }
+
+    membrane_inlet
+    {
+        type        zeroGradient;
+    }
+
+    membrane_outlet
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -25,7 +25,9 @@ divSchemes
 {
     default     none;
     // Upwind convection for species transport (high-Pe axial flow)
-    div(phi,C_H2)   Gauss upwind;
+    div(phi,C_H2)       Gauss upwind;
+    // Thermal advection — added after speciesSolid gained thermal advection support
+    div(rhoPhi,e)       Gauss upwind;
 }
 
 laplacianSchemes

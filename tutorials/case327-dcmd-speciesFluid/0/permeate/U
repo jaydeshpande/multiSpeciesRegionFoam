@@ -1,0 +1,55 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/permeate";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Counter-flow permeate at 0.169 m/s in −y direction.
+// Inlet at y = 66 mm (permeate_inlet), outlet at y = 0 (permeate_outlet).
+//
+// Q_perm = 3.65 L/min / 3 channels = 1.217 L/min per channel
+// U_mean = (1.217e-3/60) / 120e-6 = 0.169 m/s
+// Re     = ρ·U·D_h/μ = 998×0.169×0.00828/1.002e-3 ≈ 1393
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 -0.169 0);
+
+boundaryField
+{
+    permeate_inlet
+    {
+        type        fixedValue;
+        value       uniform (0 -0.169 0);
+    }
+
+    permeate_outlet
+    {
+        type        zeroGradient;
+    }
+
+    permeate_outer
+    {
+        type        noSlip;
+    }
+
+    permeate_to_membrane
+    {
+        type        noSlip;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

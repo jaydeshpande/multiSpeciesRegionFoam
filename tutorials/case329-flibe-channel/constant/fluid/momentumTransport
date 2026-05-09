@@ -1,0 +1,19 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      momentumTransport;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Re ≈ 34 (U=0.01 m/s, Dh=10 mm, ν=2.9e-6 m²/s) — well within laminar regime.
+
+simulationType  laminar;
+
+// ************************************************************************* //

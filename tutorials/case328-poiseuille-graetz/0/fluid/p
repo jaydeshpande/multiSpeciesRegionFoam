@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Kinematic gauge pressure [m²/s²].
+// Fully-developed analytical pressure drop:
+//   Δp/L = -12·ν·U_mean/W² = -12·1.004e-6·0.01/(1e-3)² = -0.1205 m/s² per m
+//   Over L = 50 mm:  Δp = 0.1205·0.05 = 0.006 m²/s²  (inlet higher than outlet)
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    inlet
+    {
+        type        zeroGradient;
+    }
+
+    outlet
+    {
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    wall_left
+    {
+        type        zeroGradient;
+    }
+
+    wall_right
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

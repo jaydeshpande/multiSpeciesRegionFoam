@@ -23,6 +23,8 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{multirow}
+\usepackage{float}
+\usepackage{longtable}
 
 %% Colours
 \definecolor{foamblue}{RGB}{0,82,147}
@@ -87,6 +89,7 @@
 \newcommand{\Pa}{\,\text{Pa}}
 \newcommand{\J}{\,\text{J}}
 \newcommand{\W}{\,\text{W}}
+\newcommand{\kg}{\,\text{kg}}
 \newcommand{\caseref}[1]{\texttt{\color{casegreen}#1}}
 \newcommand{\bctype}[1]{\texttt{\color{foamblue}#1}}
 \newcommand{\Da}{\mathrm{Da}}
@@ -111,7 +114,7 @@
     \texttt{multiSpeciesRegionFoam} library: governing equations, material
     constitutive laws, interface and surface boundary conditions, performance
     metrics, and numerical discretisation. Each section indicates which tutorial
-    cases (case311–case322) demonstrate the corresponding physics.
+    cases (case311–case329) demonstrate the corresponding physics.
   \end{tcolorbox}
 
   \vspace{30pt}
@@ -132,27 +135,36 @@
 
 \texttt{multiSpeciesRegionFoam} is an OpenFOAM-13 add-on that extends the
 native \texttt{foamMultiRun}~\cite{CFDDirect} multi-region framework with coupled species
-transport.  Each solid region runs the \texttt{speciesSolid} solver module,
-which adds a species conservation equation alongside the inherited thermal
-energy equation.  Inter-region coupling (heat and species) uses OpenFOAM's
-mapped-patch infrastructure, and all new boundary conditions are registered
-in the standard run-time selection tables~\cite{Hattab2024}.
-
-\textbf{Physical scope.}
-The library targets \emph{diffusion-dominated} transport of a dilute dissolved
-species (hydrogen isotopes H/D/T, vapour, dissolved salt) through one or more
-solid layers.  Convection inside the solid and binary diffusion effects are
-neglected; the driving force is the concentration gradient in each layer.
-Typical applications are:
+transport.  Two solver modules are provided:
 
 \begin{itemize}[itemsep=2pt]
-  \item Hydrogen permeation through hydrogen carrier pipes and storage tanks
-  \item Tritium permeation through first-wall and breeding blanket materials in
-        fusion machines, and through structural materials in molten salt reactors (H, D, T transport; Sieverts-law solubility).
+  \item \textbf{\texttt{speciesSolid}} — adds a species conservation equation to solid
+        (or fluid-region-with-prescribed-flow) regions alongside the inherited thermal
+        energy equation from the \texttt{solid} base module.
+  \item \textbf{\texttt{speciesFluid}} — extends \texttt{incompressibleFluid} with a
+        solved temperature field and species transport equation.  The full
+        Navier--Stokes PIMPLE loop (U, p) is inherited; temperature and species
+        are added in \texttt{thermophysicalPredictor()}.
+\end{itemize}
+
+Inter-region coupling (heat and species) uses OpenFOAM's mapped-patch
+infrastructure, and all new boundary conditions are registered in the
+standard run-time selection tables~\cite{Hattab2024}.
+
+\textbf{Physical scope.}
+The library covers the full range from pure-diffusion permeation barriers to
+coupled advection-diffusion in molten-salt channels.  Typical applications are:
+
+\begin{itemize}[itemsep=2pt]
+  \item Hydrogen / tritium permeation through first-wall and breeding-blanket
+        materials in fusion machines; structural materials in molten salt
+        reactors (Sieverts-law solubility).
   \item Dense-film membrane separation: reverse osmosis, membrane distillation,
         pervaporation (Henry-law solubility, Arrhenius temperature dependence).
   \item Permeation barriers (tungsten carbide, alumina coatings)~\cite{Anderl1992}.
-  \item Hydrogen permeation in heat exchangers with molten-salt coolants.
+  \item Heat-exchanger tritium transport: FLiBe/Hitec molten-salt systems with
+        conjugate heat transfer and dissolved-species permeation.
+  \item Fluid-channel species accumulation and wall permeation (speciesFluid).
 \end{itemize}
 
 % ============================================================
@@ -194,7 +206,8 @@ and the equation reduces to pure diffusion.  The source term $S_\text{vol}$ is
 optional and uniform within each region.
 
 \begin{tcolorbox}[casebox]
-  \textbf{Demonstrated by:} all twelve tutorial cases.
+  \textbf{Demonstrated by:} all nineteen tutorial cases
+  (\caseref{case311}–\caseref{case329}).
   Cases \caseref{case311}–\caseref{case312} use the thermal field $T$ as a
   species proxy to verify the pure-diffusion solver before species coupling is
   introduced.
@@ -242,10 +255,141 @@ assembling the species equation.
   heat exchanger; conjugate heat transfer through FLiBe–SS316–Hitec).\\
   \textbf{Isothermal (energy solved but $T$ fixed):}
   \caseref{case311}–\caseref{case315}, \caseref{case317}–\caseref{case319},
-  \caseref{case321}–\caseref{case322}.
+  \caseref{case321}–\caseref{case322}, \caseref{case328}.\\
+  \textbf{Active $T$ advection (\texttt{speciesFluid}):}
+  \caseref{case327}–\caseref{case329}.
 \end{tcolorbox}
 
-\subsection{Species and energy coupling}
+\subsection{Species and energy transport in fluid regions (\texttt{speciesFluid})}
+\label{sec:fluid}
+
+The \texttt{speciesFluid} solver module targets incompressible fluid regions
+where the velocity field must be computed from the Navier--Stokes equations.
+It inherits the PIMPLE velocity-pressure loop from \texttt{incompressibleFluid}
+and adds temperature and species transport via an overridden
+\texttt{thermophysicalPredictor()} method.
+
+\subsubsection{Full equation set solved per PIMPLE outer corrector}
+
+\textbf{Step 1 — Momentum and continuity} (inherited, solved first):
+
+\begin{tcolorbox}[eqbox,title={Incompressible Navier--Stokes}]
+\begin{align}
+  \nabla\cdot\mathbf{U} &= 0 \label{eq:cont} \\[4pt]
+  \pder{\mathbf{U}}{t}
+    + \nabla\cdot(\mathbf{U}\mathbf{U})
+  &= -\nabla p + \nabla\cdot(\nu\,\nabla\mathbf{U}) \label{eq:mom}
+\end{align}
+\end{tcolorbox}
+
+where $p\,[\m^2\,\s^{-2}]$ is kinematic pressure and $\nu\,[\m^2\,\s^{-1}]$
+is kinematic viscosity.
+
+\textbf{Step 2 — Temperature} (scalar transport):
+
+\begin{tcolorbox}[eqbox,title={Energy equation — \texttt{speciesFluid} regions}]
+\begin{equation}\label{eq:fluid_T}
+  \pder{T}{t}
+  \;+\; \nabla\cdot(\mathbf{U}\,T)
+  \;=\; \nabla\cdot\!\bigl(\alpha\,\nabla T\bigr),
+  \qquad
+  \alpha = \frac{\kappa}{\rho\,C_p}
+\end{equation}
+\end{tcolorbox}
+
+This is the incompressible constant-property form of the energy equation,
+where $\alpha\,[\m^2\,\s^{-1}]$ is the thermal diffusivity.  It is solved as
+an advection-diffusion equation for $T$ directly, rather than for the internal
+energy $e = C_p\,T$ used by the \texttt{solid} module.
+
+\textbf{Step 3 — Species concentration} (advection-diffusion):
+
+\begin{tcolorbox}[eqbox,title={Species equation — \texttt{speciesFluid} regions}]
+\begin{equation}\label{eq:fluid_C}
+  \pder{C}{t}
+  \;+\; \nabla\cdot(\mathbf{U}\,C)
+  \;=\; \nabla\cdot\!\bigl(D(T)\,\nabla C\bigr)
+  \;-\; \pder{C_t}{t}
+  \;+\; S_\text{vol}
+\end{equation}
+\end{tcolorbox}
+
+After solving $T$, the diffusivity $D(T)$ is refreshed via
+\texttt{species\_.correctProperties()} before assembling~\eqref{eq:fluid_C}.
+The trapping sink $\partial C_t/\partial t$ (§\ref{sec:trap}) applies equally
+here; most fluid-region cases use \texttt{noTrapping}.
+
+\subsubsection{Numerical requirements for \texttt{speciesFluid}}
+
+The advection terms $\nabla\cdot(\mathbf{U}\,T)$ and $\nabla\cdot(\mathbf{U}\,C)$
+produce \emph{asymmetric} coefficient matrices.  The following requirements
+must be observed in \texttt{fvSolution}:
+
+\begin{tcolorbox}[notebox]
+\textbf{Matrix solver:} use \texttt{PBiCGStab} with \texttt{DILU} preconditioner
+for \texttt{"T.*"} and \texttt{"C\_.*"}.  \texttt{PCG} (symmetric-only) will
+abort with the error \textit{``Unknown asymmetric matrix solver PCG''}.
+
+\textbf{Wildcard:} use \texttt{"T.*"} (not bare \texttt{T}) in the
+\texttt{solvers} block.  The PIMPLE final corrector creates a \texttt{TFinal}
+field; omitting the wildcard causes a \textit{``keyword TFinal is undefined''} error.
+\end{tcolorbox}
+
+\textbf{Minimum \texttt{fvSolution} for a \texttt{speciesFluid} region:}
+\begin{verbatim}
+solvers {
+    "T.*"  { solver PBiCGStab; preconditioner DILU;
+              tolerance 1e-10; relTol 0; }
+    "C_.*" { solver PBiCGStab; preconditioner DILU;
+              tolerance 1e-10; relTol 0; }
+}
+PIMPLE { nOuterCorrectors 3; nCorrectors 2;
+         nNonOrthogonalCorrectors 0; }
+\end{verbatim}
+
+\textbf{Required \texttt{physicalProperties} format:}
+\begin{verbatim}
+viscosityModel  Newtonian;           % read by incompressibleFluid
+nu  [0 2 -1 0 0 0 0]  4.74e-7;
+rho    983;                          % read by speciesFluid
+Cp     4183;
+mixture { transport { kappa  0.654; } }
+\end{verbatim}
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:}
+  \caseref{case327} (DCMD with solved laminar flow; feed and permeate use
+  \texttt{speciesFluid}),
+  \caseref{case328} (Poiseuille + Graetz validation of the solver),
+  \caseref{case329} (FLiBe channel with distributed H$_2$ source and
+  SS316 permeation).
+\end{tcolorbox}
+
+\subsubsection{Dimensional considerations — Schmidt and Péclet numbers}
+
+In fluid regions, two dimensionless groups govern the relative importance of
+advection and diffusion for momentum ($\mathrm{Sc}$) and species
+($\mathrm{Pe}$):
+
+\begin{equation}
+  \mathrm{Sc} = \frac{\nu}{D}, \qquad
+  \mathrm{Pe} = \frac{U\,L}{D} = \mathrm{Re}\cdot\mathrm{Sc}
+\end{equation}
+
+For liquid metals and molten salts, $\mathrm{Sc}\sim 10^2$--$10^3$ (molecular
+diffusivity is orders of magnitude smaller than momentum diffusivity).  At high
+$\mathrm{Pe}$ the concentration boundary layer at a permeation wall is thin:
+
+\begin{equation}
+  \frac{\delta_C}{L} \;\sim\; \mathrm{Pe}^{-1/3}
+\end{equation}
+
+This sets the mesh resolution requirement near permeation walls.
+Upwind (\texttt{Gauss upwind}) or linearUpwind schemes for
+$\nabla\cdot(\mathbf{U}\,C)$ prevent numerical oscillations at high Pe.
+
+\subsection{Species and energy coupling — multi-region}
+\label{sec:coupling}
 
 In multi-region cases, the PIMPLE loop exchanges temperature across coupled
 patches via \bctype{coupledTemperature} boundary conditions (standard
@@ -295,11 +439,11 @@ isothermal tutorial cases.
 
 \begin{tcolorbox}[casebox]
   \textbf{Isothermal ($E_a = 0$):} \caseref{case311}–\caseref{case315},
-  \caseref{case317}–\caseref{case319}, \caseref{case321}–\caseref{case322}.\\
-  \textbf{Arrhenius $D(T)$ active:} \caseref{case316} (D(T) for vapour
-  diffusion), \caseref{case319} (real $D(T)$ for WC and SS316),
-  \caseref{case320} (real $D(T)$ for SS316 wall at $T$ gradient from
-  FLiBe/Hitec).
+  \caseref{case317}–\caseref{case319}, \caseref{case321}–\caseref{case322},
+  \caseref{case328}–\caseref{case329}.\\
+  \textbf{Arrhenius $D(T)$ active:} \caseref{case316} (vapour diffusion),
+  \caseref{case319} (WC and SS316), \caseref{case320} (SS316 in HX),
+  \caseref{case323}–\caseref{case327} (PTFE membrane and/or SS316 wall).
 \end{tcolorbox}
 
 \subsection{Solubility laws}
@@ -323,7 +467,8 @@ include iron, stainless steel (SS316), tungsten, vanadium alloys, and palladium~
 
 \begin{tcolorbox}[casebox]
   Used in: \caseref{case312}–\caseref{case314}, \caseref{case318}–\caseref{case320},
-  \caseref{case321} (metal layer), \caseref{case322}.
+  \caseref{case321} (metal layer), \caseref{case322},
+  \caseref{case323} (FLiBe and SS316 walls), \caseref{case329} (FLiBe–SS316 interface).
 \end{tcolorbox}
 
 \subsubsection{Henry's law (polymers, liquids, porous media)}
@@ -762,6 +907,186 @@ diatomic gases).
 \end{tcolorbox}
 
 % ============================================================
+\section{Membrane Equilibrium Boundary Conditions}
+\label{sec:membc}
+% ============================================================
+
+Two additional boundary conditions support membrane distillation modelling
+where the species concentration and the thermal boundary condition at the
+membrane face are coupled through the vapour pressure.
+
+\subsection{Antoine equilibrium (\texttt{antoineEquilibrium})}
+\label{sec:antoine}
+
+The \bctype{antoineEquilibrium} boundary condition is a
+\texttt{fixedValueFvPatchScalarField} that computes the equilibrium vapour
+molar concentration from the local face temperature using the Antoine equation:
+
+\begin{tcolorbox}[eqbox,title={Antoine vapour pressure}]
+\begin{equation}\label{eq:antoine}
+  \ln\bigl(p_\text{vap}\,[\Pa]\bigr)
+  \;=\; A \;-\; \frac{B}{C_\text{ant} + T}
+\end{equation}
+\end{tcolorbox}
+
+The face concentration is set using the ideal-gas law:
+
+\begin{equation}\label{eq:antoine_C}
+  C_\text{face} = \frac{p_\text{vap}}{R\,T} \qquad [\mol\,\m^{-3}]
+\end{equation}
+
+The temperature $T$ is read from the registered temperature field on the same
+patch.  Because $T$ at the membrane face changes as the flow solution
+converges, \bctype{antoineEquilibrium} is evaluated every PIMPLE outer
+corrector, providing a dynamic coupling between concentration and temperature.
+
+\textbf{Dictionary syntax:}
+\begin{verbatim}
+C_H2O_at_membrane
+{
+    type        antoineEquilibrium;
+    A           23.197;    // ln(Pa) form of Antoine equation
+    B           3885.7;    // K
+    C           -42.98;    // K  (negative shifts reference)
+    value       uniform 0;
+}
+\end{verbatim}
+
+This BC replaces \texttt{codedFixedValue} used in earlier cases and is
+physically identical but compiled and registered as a proper named BC.
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case325}, \caseref{case326},
+  \caseref{case327} (membrane face $C_\text{H$_2$O}$, both membrane–feed and
+  membrane–permeate interfaces).
+\end{tcolorbox}
+
+\subsection{Latent heat flux (\texttt{latentHeatFlux})}
+\label{sec:latent}
+
+The \bctype{latentHeatFlux} boundary condition is a
+\texttt{mixedFvPatchScalarField} applied to the temperature field $T$ in
+fluid channel regions at their membrane-facing patch.  It adds the latent heat
+of phase change to the thermal balance:
+
+\begin{tcolorbox}[eqbox,title={Latent heat coupling}]
+\begin{equation}\label{eq:latent}
+  q_\text{latent}
+  \;=\;
+  J \cdot L_\text{vap} \cdot M
+  \qquad [\W\,\m^{-2}]
+\end{equation}
+\end{tcolorbox}
+
+where $J\,[\mol\,\m^{-2}\,\s^{-1}]$ is the vapour molar flux through the
+membrane (computed from the neighbour region's diffusivity and concentration
+gradient), $L_\text{vap}\,[\J\,\mol^{-1}]$ is the molar latent heat, and
+$M\,[\kg\,\mol^{-1}]$ is the molar mass.
+
+The BC contributes $q_\text{latent}$ to the heat balance as a
+\texttt{refGrad} correction: on the evaporation (feed) side, heat is
+\emph{removed} by evaporation; on the condensation (permeate) side, heat is
+\emph{added}.  The value fraction follows the same conjugate-transfer formula
+as \bctype{coupledTemperature}, ensuring flux continuity for the thermal field.
+
+\textbf{Dictionary syntax:}
+\begin{verbatim}
+feed_at_membrane
+{
+    type        latentHeatFlux;
+    Lvap        44000;          // J/mol  (water at 60°C)
+    M           0.018015;       // kg/mol
+    CName       C_H2O;          // concentration field driving the flux
+    side        evaporation;    // or: condensation
+    value       uniform 333;
+}
+\end{verbatim}
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:} \caseref{case326}, \caseref{case327} (replaces
+  \bctype{coupledTemperature} at membrane faces in feed and permeate regions).
+\end{tcolorbox}
+
+% ============================================================
+\section{Solver Selection Guide}
+\label{sec:solverselect}
+% ============================================================
+
+Choosing between \texttt{speciesSolid} and \texttt{speciesFluid} for a fluid
+channel region is the most important design decision in setting up a new case.
+The following criteria apply.
+
+\subsection{Use \texttt{speciesSolid} for a fluid region when}
+
+\begin{itemize}[itemsep=4pt]
+
+  \item \textbf{The velocity field is known in advance.}
+        Plug flow ($\mathbf{U} = \text{const}$), an analytically prescribed
+        Poiseuille profile, or a uniform-bulk-velocity approximation.
+        Set a \texttt{fixedValue} (or \texttt{uniformFixedValue}) $\mathbf{U}$
+        field in \texttt{0/<region>/U} and add the appropriate
+        \texttt{div(phi,C\_<species>)} and \texttt{div(rhoPhi,e)} entries to
+        \texttt{fvSchemes}.
+
+  \item \textbf{The primary research question is species or heat transport,
+        not flow development.}
+        When advection is simply a forcing term and its precise spatial
+        distribution is not critical, the analytical-velocity approximation
+        reduces cost and complexity without meaningful loss of accuracy.
+
+  \item \textbf{The effective diffusivity already encodes flow effects.}
+        In turbulent channels, the turbulent diffusivity
+        $D_\text{eff} \approx \nu_t / \mathrm{Sc}_t$ can be orders of magnitude
+        larger than the molecular value.  Using a constant $D_\text{eff}$ in
+        \texttt{speciesSolid} captures the bulk transport without resolving the
+        velocity field (e.g.\ case323, $D_\text{eff} \approx 10^{-4}\,\m^2\,\s^{-1}$).
+
+  \item \textbf{The region is a solid.}
+        \texttt{speciesSolid} uses \texttt{solidThermo} for temperature, which
+        is the correct formulation for metallic walls, membranes, and barriers.
+        No momentum equation is required.
+
+\end{itemize}
+
+\subsection{Use \texttt{speciesFluid} for a fluid region when}
+
+\begin{itemize}[itemsep=4pt]
+
+  \item \textbf{The velocity profile is unknown and must be computed.}
+        Developing flow (entry region), complex geometry, or pressure-driven
+        flow in a channel of arbitrary cross-section where the parabolic/
+        turbulent profile is not prescribed.
+
+  \item \textbf{Concentration polarisation from a developing boundary layer
+        must be captured.}
+        At high Schmidt number ($\mathrm{Sc} = \nu/D \gg 1$), the concentration
+        boundary layer at the permeation wall is much thinner than the momentum
+        BL.  Resolving $\delta_C \sim L\,\mathrm{Pe}^{-1/3}$ requires the
+        correct velocity profile from the solved PIMPLE loop.
+
+  \item \textbf{The pressure field is physically meaningful.}
+        Cases where the pressure drop, velocity profile, or flow recirculation
+        influences the result require the full incompressible Navier--Stokes
+        solution.
+
+  \item \textbf{The energy equation involves convective transport.}
+        \texttt{speciesSolid} uses the \texttt{solidThermo} internal energy
+        form $\partial(\rho e)/\partial t + \nabla\cdot\mathbf{q}$, which is
+        appropriate for solids.  For a fluid, the temperature advection term
+        $\nabla\cdot(\mathbf{U}\,T)$ is essential; \texttt{speciesFluid}
+        provides it via the scalar transport form~\eqref{eq:fluid_T}.
+
+\end{itemize}
+
+\begin{tcolorbox}[notebox]
+  \textbf{Rule of thumb.}  For laminar channel flow at $\mathrm{Pe} \lesssim 100$,
+  advection and diffusion compete on similar length scales and the velocity
+  profile matters.  Use \texttt{speciesFluid}.  For $\mathrm{Pe} \gg 100$ in
+  engineering contexts where only the bulk flux is needed, a turbulent-effective-$D$
+  in \texttt{speciesSolid} is usually sufficient and much cheaper.
+\end{tcolorbox}
+
+% ============================================================
 \section{Numerical Implementation}
 \label{sec:num}
 % ============================================================
@@ -830,6 +1155,7 @@ matrix inversion is required for the ODE update.
 \subsection{Library architecture}
 
 \begin{center}
+\small
 \begin{tabular}{lll}
 \toprule
 Library & Purpose & Key classes \\
@@ -837,17 +1163,25 @@ Library & Purpose & Key classes \\
 \texttt{libspeciesTransport.so} & Core physics & \texttt{speciesModel}, \texttt{arrheniusProperty},\\
 & & \texttt{McNabbFoster}, \texttt{noTrapping} \\
 \texttt{libspeciesCoupling.so} & Boundary conditions & \texttt{sievertsCoupledMixed},\\
-& & \texttt{surfaceRecombination} \\
-\texttt{libspeciesSolid.so} & Solver module & \texttt{speciesSolid} \\
+& & \texttt{surfaceRecombination},\\
+& & \texttt{antoineEquilibrium},\\
+& & \texttt{latentHeatFlux} \\
+\texttt{libspeciesSolid.so} & Solver: solid / prescribed-flow & \texttt{speciesSolid} \\
+\texttt{libspeciesFluid.so} & Solver: incompressible fluid & \texttt{speciesFluid} \\
 \texttt{libspeciesPost.so} & Post-processing & \texttt{speciesFlux} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-All libraries must be listed in \texttt{system/controlDict}:
+All cases must list the required libraries in \texttt{system/controlDict}.
+Cases using only solid regions:
 \begin{verbatim}
 libs ("libspeciesTransport.so" "libspeciesCoupling.so"
       "libspeciesSolid.so"    "libspeciesPost.so");
+\end{verbatim}
+Cases with one or more \texttt{speciesFluid} regions also add:
+\begin{verbatim}
+libs (...  "libspeciesFluid.so");
 \end{verbatim}
 
 % ============================================================
@@ -855,101 +1189,141 @@ libs ("libspeciesTransport.so" "libspeciesCoupling.so"
 \label{sec:tutorials}
 % ============================================================
 
-The twelve tutorial cases are ordered by increasing physical complexity.
+Nineteen tutorial cases cover the full range from pure-diffusion verification
+to fully coupled fluid-flow species transport.  Cases 311--322 use
+\texttt{speciesSolid} exclusively; cases 323--326 extend \texttt{speciesSolid}
+with prescribed convection; cases 327--329 introduce \texttt{speciesFluid}.
+
 Each case contains an \texttt{Allrun} script, an \texttt{Allclean} script,
-a per-case \texttt{README.md}, and a Python validation script that compares
-the simulation output to an analytical or benchmark solution.
+a per-case \texttt{README.md}, and (for verification cases) a Python
+validation script in \texttt{validation/} that compares the simulation output
+to an analytical or benchmark solution (exit code 0 on pass, 1 on fail).
 
 \subsection{Case summary table}
 
-\begin{table}[htbp]
-\centering
-\caption{Tutorial cases and the physics they demonstrate.}
-\label{tab:cases}
 \small
-\begin{tabularx}{\linewidth}{llX}
+\begin{longtable}{llp{9.5cm}}
+\caption{Tutorial cases and the physics they demonstrate.}
+\label{tab:cases}\\
 \toprule
-Case & Solver & Physics / Key feature \\
+Case & Solver(s) & Physics / Key feature \\
 \midrule
+\endfirsthead
+\toprule
+Case & Solver(s) & Physics / Key feature \\
+\midrule
+\endhead
+\midrule\multicolumn{3}{r}{\small\itshape continued on next page\ldots}\\
+\endfoot
+\bottomrule
+\endlastfoot
+
 \caseref{case311} & \texttt{solid} &
-  Pure 1-D diffusion, step BC.
-  Uses temperature field as species proxy.
+  Pure 1-D diffusion, step BC.  Temperature field used as species proxy.
   Validates erfc front propagation (exact analytical solution). \\[2pt]
 
 \caseref{case312} & \texttt{speciesSolid} &
-  1-D diffusion, non-uniform initial condition (\texttt{setFields}).
-  Fourier cosine series analytical solution.
-  First use of the species equation. \\[2pt]
+  1-D diffusion, non-uniform IC (\texttt{setFields}).
+  Fourier cosine-series analytical solution.  First use of the species equation. \\[2pt]
 
 \caseref{case313} & \texttt{speciesSolid} &
   McNabb--Foster trapping (§\ref{sec:trap}).
-  Two sub-cases: weak trapping ($\alpha_t/D \ll 1$) and strong trapping
-  ($\alpha_t/D \gg 1$).
+  Weak ($\alpha_t/D \ll 1$) and strong ($\alpha_t/D \gg 1$) trapping regimes.
   Validates semi-implicit ODE~\eqref{eq:trap_euler}. \\[2pt]
 
 \caseref{case314} & \texttt{speciesSolid} &
   Two-region composite membrane; Sieverts--Sieverts linear partition
-  (§\ref{sec:bc_linear}) with $K_{s,A}/K_{s,B} = 4$.
-  Validates concentration jump at the interface. \\[2pt]
+  (§\ref{sec:bc_linear}), $K_{s,A}/K_{s,B} = 4$.
+  Validates interface concentration jump. \\[2pt]
 
 \caseref{case315} & \texttt{speciesSolid} &
-  Isothermal membrane distillation.
-  Henry-law solubility (§\ref{sec:sol}), constant $D$.
+  Isothermal membrane distillation; Henry-law solubility, constant $D$.
   Linear steady-state profile. \\[2pt]
 
 \caseref{case316} & \texttt{speciesSolid} &
-  Membrane distillation with Arrhenius $D(T)$ (§\ref{sec:arrhenius}).
-  Temperature gradient drives non-linear steady-state profile.
-  Full energy--species coupling active. \\[2pt]
+  Membrane distillation with Arrhenius $D(T)$.  Temperature gradient drives
+  non-linear steady-state profile.  Full energy--species coupling. \\[2pt]
 
 \caseref{case317} & \texttt{speciesSolid} &
   Reverse osmosis: two-region feed/membrane.
-  Henry partition at the feed face ($K_H = 0.5$).
-  Solution-diffusion model. \\[2pt]
+  Henry partition at feed face ($K_H = 0.5$).  Solution-diffusion model. \\[2pt]
 
 \caseref{case318} & \texttt{speciesSolid} &
-  Code-to-code benchmark against Pasler et al.\ and Fourier sine series.
-  Constant BCs; transient diffusion with exact analytical solution. \\[2pt]
+  Code-to-code benchmark vs Pasler et al.\ and Fourier sine series.
+  Constant BCs; transient diffusion; exact analytical solution. \\[2pt]
 
 \caseref{case319} & \texttt{speciesSolid} &
-  WC coating + SS316 substrate; real Arrhenius $D(T)$ for both materials.
-  Linear partition (\eqref{eq:linear_part}).
-  PRF $\approx 200$ (§\ref{sec:prf}).
-  Two sub-cases: \texttt{with\_coating} / \texttt{no\_coating}. \\[2pt]
+  WC coating + SS316; real Arrhenius $D(T)$ for both materials.
+  PRF $\approx 200$ (§\ref{sec:prf}).  Two sub-cases with/without coating. \\[2pt]
 
 \caseref{case320} & \texttt{speciesSolid} &
-  Three-region shell-and-tube heat exchanger: FLiBe (shell) $|$ SS316 (wall)
-  $|$ Hitec (tube).
-  Full conjugate heat transfer + species permeation through the wall.
-  Arrhenius $D(T)$ from $T$ gradient through wall.
-  \texttt{speciesFlux} function object measures $J$ through the wall. \\[2pt]
+  Three-region shell-tube HX: FLiBe $|$ SS316 $|$ Hitec.
+  Conjugate heat + H$_2$ permeation; Arrhenius $D(T)$.
+  \texttt{speciesFlux} FO measures $J$. \\[2pt]
 
 \caseref{case321} & \texttt{speciesSolid} &
-  Henry--Sieverts partition (§\ref{sec:bc_nonlinear}, §\ref{sec:bc_linear}).
-  Two sub-cases: \texttt{sieverts\_sieverts} (reference) and
-  \texttt{henry\_sieverts} (sqrt/quadratic BC).
-  Validates 23.6\,\% flux increase and interface concentration jump.
-  Golden-ratio interface concentration~\eqref{eq:hs_ss}. \\[2pt]
+  Henry--Sieverts partition (§\ref{sec:bc_nonlinear}).
+  Two sub-cases: \texttt{sieverts\_sieverts} and \texttt{henry\_sieverts}.
+  Validates 23.6\,\% flux increase; golden-ratio interface~\eqref{eq:hs_ss}. \\[2pt]
 
 \caseref{case322} & \texttt{speciesSolid} &
-  Surface recombination/dissociation (§\ref{sec:bc_recomb}).
-  Two sub-cases: \texttt{sieverts\_bc} ($\Da \to \infty$ reference) and
-  \texttt{surface\_recombination} ($\Da = 1$).
-  Validates golden-ratio surface concentration~\eqref{eq:Cs_Da1} and
-  38.2\,\% flux reduction. \\
-\bottomrule
-\end{tabularx}
-\end{table}
+  Surface recombination / dissociation (§\ref{sec:bc_recomb}).
+  Da$=1$: $C_s = (\sqrt{5}-1)/2$; 38.2\,\% flux reduction vs Sieverts BC. \\[2pt]
+
+\caseref{case323} & \texttt{speciesSolid} &
+  2-D counter-flow FLiBe--SS316--Hitec HX.
+  Prescribed turbulent plug flow in fluid channels via registered $\mathbf{U}$ field.
+  Turbulent-effective $D_\text{eff}$ absorbs flow effects. \\[2pt]
+
+\caseref{case324} & \texttt{speciesSolid} &
+  DCMD validation vs Khalifa 2017.  Single-region PTFE membrane;
+  membrane face $C$ set from Antoine equation as \texttt{fixedValue}.
+  $J_\text{sim} = 31.1$ vs $J_\text{exp} = 35\,\text{L\,m}^{-2}\,\text{h}^{-1}$. \\[2pt]
+
+\caseref{case325} & \texttt{speciesSolid} &
+  DCMD with CFD temperature polarisation.  Three-region 2-D; prescribed plug
+  flow in feed/permeate; \bctype{antoineEquilibrium} at membrane faces
+  (§\ref{sec:antoine}).  Temperature polarisation coefficient (TPC) emerges
+  from coupled CFD rather than a heat-transfer correlation. \\[2pt]
+
+\caseref{case326} & \texttt{speciesSolid} &
+  DCMD with latent heat coupling.
+  \bctype{latentHeatFlux} BC (§\ref{sec:latent}) replaces
+  \bctype{coupledTemperature} at membrane faces; adds $q = J\,L_\text{vap}\,M$
+  to the thermal balance.  Full membrane-distillation energy accounting. \\[2pt]
+
+\caseref{case327} & \texttt{speciesFluid} + \texttt{speciesSolid} &
+  DCMD with solved incompressible flow.  Feed/permeate: \texttt{speciesFluid}
+  (PIMPLE $\mathbf{U}/p$ + scalar $T$ + $C$).  Membrane: \texttt{speciesSolid}.
+  Demonstrates the complete \texttt{speciesFluid} workflow with
+  \bctype{antoineEquilibrium} and \bctype{latentHeatFlux} at coupled faces. \\[2pt]
+
+\caseref{case328} & \texttt{speciesFluid} &
+  Solver validation: single-region 2-D channel, water at Re$=20$.
+  Three quantitative checks: Poiseuille profile (L$_2 < 2\,\%$),
+  pressure gradient ($<5\,\%$), Graetz Nu$_\infty = 7.5407$ ($<5\,\%$). \\[2pt]
+
+\caseref{case329} & \texttt{speciesFluid} + \texttt{speciesSolid} &
+  FLiBe vertical channel with distributed H$_2$ source $\to$ SS316 permeation.
+  Uniform tritium-production source ($S_\text{vol}$); $\mathrm{Pe} = 1000$;
+  Sieverts linear interface; vacuum outer BC.
+  Demonstrates concentration accumulation and permeation in a molten-salt HX
+  channel relevant to fusion breeding blankets. \\
+
+\end{longtable}
 
 \subsection{Physics-to-tutorial cross-reference}
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
-\caption{Which tutorials exercise which physical models.}
+\caption{Which tutorials exercise which physical models (all 19 cases).
+  $\checkmark$ = feature present; blank = not applicable.}
 \label{tab:cross}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{lcccccccccccc}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.3}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrrrrrrrrrrrrrr}
 \toprule
 Physical model &
 \rotatebox{75}{\caseref{311}} & \rotatebox{75}{\caseref{312}} &
@@ -957,36 +1331,65 @@ Physical model &
 \rotatebox{75}{\caseref{315}} & \rotatebox{75}{\caseref{316}} &
 \rotatebox{75}{\caseref{317}} & \rotatebox{75}{\caseref{318}} &
 \rotatebox{75}{\caseref{319}} & \rotatebox{75}{\caseref{320}} &
-\rotatebox{75}{\caseref{321}} & \rotatebox{75}{\caseref{322}} \\
+\rotatebox{75}{\caseref{321}} & \rotatebox{75}{\caseref{322}} &
+\rotatebox{75}{\caseref{323}} & \rotatebox{75}{\caseref{324}} &
+\rotatebox{75}{\caseref{325}} & \rotatebox{75}{\caseref{326}} &
+\rotatebox{75}{\caseref{327}} & \rotatebox{75}{\caseref{328}} &
+\rotatebox{75}{\caseref{329}} \\
 \midrule
 Species diffusion eq.~\eqref{eq:species}
-  & \checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
 Energy eq.~\eqref{eq:energy}
-  & \checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
-Arrhenius~\eqref{eq:arrhenius}
-  & & & & & & \checkmark& & &\checkmark&\checkmark& & \\
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+Arrhenius $D(T)$~\eqref{eq:arrhenius}
+  & & & & & &\checkmark& & &\checkmark&\checkmark& &
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark& & \\
 Sieverts law~\eqref{eq:sieverts}
-  & & &\checkmark&\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+  & & &\checkmark&\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark
+  &\checkmark& & & & & &\checkmark \\
 Henry law~\eqref{eq:henry}
-  & & & & &\checkmark&\checkmark&\checkmark& & & &\checkmark& \\
+  & & & & &\checkmark&\checkmark&\checkmark& & & &\checkmark&
+  & &\checkmark&\checkmark&\checkmark&\checkmark& & \\
 McNabb--Foster~\eqref{eq:trap}
-  & & &\checkmark& & & & & & & & & \\
+  & & &\checkmark& & & & & & & & &
+  & & & & & & & \\
 Linear partition~\eqref{eq:linear_part}
-  & & & &\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark& \\
+  & & & &\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark&
+  &\checkmark& & & & & &\checkmark \\
 Sqrt partition~\eqref{eq:sqrt_part}
-  & & & & & & & & & & &\checkmark& \\
+  & & & & & & & & & & &\checkmark&
+  & & & & & & & \\
 Quadratic partition~\eqref{eq:quad_part}
-  & & & & & & &\checkmark& & & &\checkmark& \\
+  & & & & & & &\checkmark& & & &\checkmark&
+  & & & & & & & \\
 Surface recombination~\eqref{eq:recomb}
-  & & & & & & & & & & & &\checkmark \\
+  & & & & & & & & & & & &\checkmark
+  & & & & & & & \\
 PRF metric~\eqref{eq:prf}
-  & & & & & & & & &\checkmark& & & \\
+  & & & & & & & & &\checkmark& & &
+  & & & & & & & \\
 speciesFlux FO~\eqref{eq:J}
-  & & & & & & & & & &\checkmark&\checkmark&\checkmark \\
-Multi-region ($\geq 3$ regions)
-  & & & & & & & & & &\checkmark& & \\
+  & & & & & & & & & &\checkmark&\checkmark&\checkmark
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark& & \\
+Multi-region ($\geq 2$ regions)
+  & & & & & & & & & &\checkmark& &
+  &\checkmark& &\checkmark&\checkmark&\checkmark& &\checkmark \\
+Antoine equilibrium BC (§\ref{sec:antoine})
+  & & & & & & & & & & & &
+  & &\checkmark&\checkmark&\checkmark&\checkmark& & \\
+Latent heat flux BC (§\ref{sec:latent})
+  & & & & & & & & & & & &
+  & & & &\checkmark&\checkmark& & \\
+Momentum eq.\ PIMPLE~\eqref{eq:mom}
+  & & & & & & & & & & & &
+  & & & & &\checkmark&\checkmark&\checkmark \\
+Volumetric source $S_\text{vol}$~\eqref{eq:species}
+  & & & & & & & & & & & &
+  & & & & & & &\checkmark \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \subsection{Running the tutorials}

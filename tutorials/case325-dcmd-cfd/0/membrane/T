@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Membrane temperature — coupled to feed (hot face) and permeate (cold face).
+// coupledTemperature enforces thermal continuity at both liquid-membrane interfaces.
+// Initial condition: linear interpolation (313 K midpoint between 333 K and 293 K).
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 313;
+
+boundaryField
+{
+    membrane_to_feed
+    {
+        type        coupledTemperature;
+        value       uniform 333;    // initial guess — feed side
+    }
+
+    membrane_to_permeate
+    {
+        type        coupledTemperature;
+        value       uniform 293;    // initial guess — permeate side
+    }
+
+    membrane_inlet
+    {
+        type        zeroGradient;
+    }
+
+    membrane_outlet
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

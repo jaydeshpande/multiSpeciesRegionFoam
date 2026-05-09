@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case326-dcmd-latent-heat
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Three-region DCMD with explicit plug-flow AND latent heat coupling.
+//
+// Same geometry, mesh, and operating conditions as case325.
+// Only the T BC at membrane-fluid interfaces changes:
+//   case325: coupledTemperature       (pure conduction coupling)
+//   case326: latentHeatFlux           (conduction + J·L_vap·M heat flux)
+//
+// Expected effect: latent heat ~21 kW/m² cools the feed surface and warms
+// the permeate surface, increasing temperature polarisation (lower TPC).
+// T_mf drops further below 333 K, T_mp rises further above 293 K relative
+// to case325, giving lower J but better agreement with the analytical
+// TPC model in case324 (which includes latent heat through the iterative
+// energy balance).
+
+application     foamMultiRun;
+
+regionSolvers
+{
+    feed        speciesSolid;
+    membrane    speciesSolid;
+    permeate    speciesSolid;
+}
+
+libs
+(
+    "libspeciesTransport.so"
+    "libspeciesCoupling.so"
+    "libspeciesSolid.so"
+);
+
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         10.0;
+
+deltaT          0.001;
+
+writeControl    runTime;
+writeInterval   2;
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable yes;
+
+// ************************************************************************* //

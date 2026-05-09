@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case324-dcmd-khalifa2017 / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      C_H2O;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Water-vapour concentration  C = p_sat(T) / (R · T)   [mol/m³]
+//
+// Operating condition: T_feed = 60°C, T_perm = 20°C, highest flow rate
+// (Q_f = 4.65 L/min, Q_p = 3.65 L/min) from Khalifa et al. Fig. 4.
+//
+// Temperature polarization (TPC ≈ 0.73) computed from Nusselt correlations
+// for the 66 × 24 × 5 mm DCMD channel (Re_feed ≈ 3750, Re_perm ≈ 1390).
+// Membrane face temperatures: T_mf = 55°C = 328 K, T_mp = 26°C = 299 K.
+//
+// Antoine equation (log₁₀(p_sat/mmHg) = 8.10765 − 1750.286/(235+T[°C])):
+//   p_sat(55°C) = 118.2 mmHg = 15 756 Pa  →  C_hot  = 15756/(8.314×328) = 5.78 mol/m³
+//   p_sat(26°C) = 25.23 mmHg =  3 363 Pa  →  C_cold = 3363/(8.314×299)  = 1.353 mol/m³
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    hot_face
+    {
+        type        fixedValue;
+        value       uniform 5.78;    // mol/m³  — p_sat(55°C)/(R·328 K)
+    }
+
+    cold_face
+    {
+        type        fixedValue;
+        value       uniform 1.353;   // mol/m³  — p_sat(26°C)/(R·299 K)
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

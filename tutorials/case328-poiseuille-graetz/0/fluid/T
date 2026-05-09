@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Cold inlet at 293 K, both walls heated to 373 K.
+// Graetz problem: constant wall-temperature, Poiseuille velocity.
+// Thermal entry length L_T = 0.04·Re·Pr·D_h ≈ 11 mm (Pr = 7).
+// From y ≈ 25 mm onward the temperature profile is thermally fully developed
+// and the local Nusselt number approaches Nu_∞ = 7.5407.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 293;
+
+boundaryField
+{
+    inlet
+    {
+        type        fixedValue;
+        value       uniform 293;
+    }
+
+    outlet
+    {
+        type        zeroGradient;
+    }
+
+    wall_left
+    {
+        type        fixedValue;
+        value       uniform 373;
+    }
+
+    wall_right
+    {
+        type        fixedValue;
+        value       uniform 373;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

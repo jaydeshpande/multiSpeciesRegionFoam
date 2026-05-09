@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Passive tracer "C_test" with a realistic aqueous diffusivity.
+// Schmidt number Sc = ν/D = 1.004e-6 / 1e-9 = 1004.
+// All boundaries are zeroGradient so C_test = 0 throughout.
+// This field plays no role in the validation — it exists only because
+// speciesFluid always requires a speciesModel.
+
+species     C_test;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-9;
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

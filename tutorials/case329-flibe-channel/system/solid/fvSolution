@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / solid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    "e.*"
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-10;
+        relTol          0;
+    }
+
+    "C_.*"
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-10;
+        relTol          0;
+    }
+}
+
+PIMPLE
+{
+    nOuterCorrectors        1;
+    nCorrectors             1;
+    nNonOrthogonalCorrectors 0;
+}
+
+// ************************************************************************* //

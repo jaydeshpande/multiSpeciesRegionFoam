@@ -1,0 +1,21 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/feed";
+    object      momentumTransport;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Feed Re ≈ 3750 (transitional).  Laminar model used for simplicity:
+// the channel is short (L/D_h ≈ 8) and the flow regime is borderline,
+// consistent with the analytical TPC model which assumes developed Poiseuille.
+
+simulationType  laminar;
+
+// ************************************************************************* //

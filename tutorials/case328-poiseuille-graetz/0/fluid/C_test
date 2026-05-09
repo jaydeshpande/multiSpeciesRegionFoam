@@ -1,0 +1,30 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case328-poiseuille-graetz / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      C_test;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Passive scalar — all boundaries zeroGradient → C_test = 0 throughout.
+
+dimensions      [0 -3 0 0 1 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    inlet       { type zeroGradient; }
+    outlet      { type zeroGradient; }
+    wall_left   { type zeroGradient; }
+    wall_right  { type zeroGradient; }
+    sides       { type empty; }
+}
+
+// ************************************************************************* //

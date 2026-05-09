@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/feed";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// The feed channel is liquid water.  C_H2O here represents a dummy scalar
+// field kept only because speciesSolid requires speciesProperties.  It carries
+// no physical meaning — the water vapour transport occurs ONLY in the PTFE
+// membrane pores, not in the liquid phase.
+//
+// D = 1×10⁻¹⁰ m²/s  (negligible molecular diffusivity of vapour in liquid water)
+// No Ks field: no Sieverts partitioning at the liquid–membrane interface.
+// The concentration in the liquid is set to zero throughout and plays no role
+// in the membrane flux calculation.
+
+species     C_H2O;
+
+D
+{
+    X0          [0 2 -1 0 0 0 0] 1e-10;   // negligible — dummy field
+    Ea          0;
+}
+
+source      0;
+
+trappingModel
+{
+    type        noTrapping;
+}
+
+// ************************************************************************* //

@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Isothermal FLiBe at 873 K (600°C).  No heat sources, so T ≈ const.
+// D(T) uses Ea=0 → D is constant regardless of T variations.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 873;
+
+boundaryField
+{
+    fluid_bottom
+    {
+        type        fixedValue;
+        value       uniform 873;
+    }
+
+    fluid_top
+    {
+        type        zeroGradient;
+    }
+
+    fluid_centerline
+    {
+        type        zeroGradient;
+    }
+
+    fluid_to_solid
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

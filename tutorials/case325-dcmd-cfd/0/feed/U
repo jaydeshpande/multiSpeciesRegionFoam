@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/feed";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Plug-flow velocity in +y (axial) direction.
+// Q_feed = 4.65 L/min total / 3 channels = 1.55 L/min per channel
+// A_cross = 24 × 5 = 120 mm²
+// U_feed = Q/A = (1.55e-3/60) / 120e-6 = 0.215 m/s
+//
+// Re_feed = ρ·U·D_h/μ = 983×0.215×0.00828/0.000466 ≈ 3750
+// Pr_feed ≈ 3.0  (at 60°C)
+//
+// The velocity is PRESCRIBED (not solved).  speciesSolid uses U to build
+// the face mass flux rhoPhi = ρ_f · (U·n·|S|) and adds fvm::div(rhoPhi,e)
+// to the energy equation, thereby modelling convective heat transfer and
+// producing natural temperature polarisation near the membrane.
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0.215 0);
+
+boundaryField
+{
+    feed_inlet
+    {
+        type        fixedValue;
+        value       uniform (0 0.215 0);
+    }
+
+    feed_outlet
+    {
+        type        zeroGradient;
+    }
+
+    feed_outer
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);    // no normal velocity at outer wall
+    }
+
+    feed_to_membrane
+    {
+        type        fixedValue;
+        value       uniform (0 0 0);    // no normal flow into membrane
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/feed";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hot feed water enters at 333 K (60°C).
+// coupledTemperature at the membrane interface enforces thermal continuity.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 333;
+
+boundaryField
+{
+    feed_inlet
+    {
+        type        fixedValue;
+        value       uniform 333;    // T_feed = 60°C
+    }
+
+    feed_outlet
+    {
+        type        zeroGradient;
+    }
+
+    feed_outer
+    {
+        type        zeroGradient;   // adiabatic outer wall
+    }
+
+    feed_to_membrane
+    {
+        type        coupledTemperature;
+        value       uniform 333;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

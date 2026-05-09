@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / membrane
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/membrane";
+    object      C_H2O;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Water vapour concentration in the PTFE membrane pores [mol/m³].
+//
+// Both fluid-facing patches use the antoineEquilibrium BC which evaluates
+//   C = p_sat(T) / (R·T)
+// from the local face temperature supplied by the coupledTemperature T BC.
+//
+//   log10(p_sat / mmHg) = 8.10765 − 1750.286 / (235 + T [°C])
+//   where R = 8.314 J/(mol·K) and 1 mmHg = 133.322 Pa
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    // Hot face — feed side membrane surface
+    membrane_to_feed
+    {
+        type    antoineEquilibrium;
+        A       8.10765;
+        B       1750.286;
+        C       235.0;
+        value   uniform 5.78;    // initial guess: C_sat at ~55°C
+    }
+
+    // Cold face — permeate side membrane surface
+    membrane_to_permeate
+    {
+        type    antoineEquilibrium;
+        A       8.10765;
+        B       1750.286;
+        C       235.0;
+        value   uniform 1.353;   // initial guess: C_sat at ~26°C
+    }
+
+    membrane_inlet
+    {
+        type    zeroGradient;
+    }
+
+    membrane_outlet
+    {
+        type    zeroGradient;
+    }
+
+    sides
+    {
+        type    empty;
+    }
+}
+
+// ************************************************************************* //

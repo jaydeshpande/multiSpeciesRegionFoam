@@ -1,0 +1,38 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/permeate";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Cold fresh water — properties at 20°C (293 K).
+//   ν   = 1.004×10⁻⁶ m²/s
+//   ρ   = 998    kg/m³
+//   Cp  = 4182   J/(kg·K)
+//   κ   = 0.598  W/(m·K)
+//   α   = κ/(ρ·Cp) = 1.43×10⁻⁷ m²/s
+//   Re  = ρ·U·D_h/μ ≈ 1393  (laminar)
+
+viscosityModel  Newtonian;
+
+nu              [0 2 -1 0 0 0 0] 1.004e-6;
+
+rho             998;
+Cp              4182;
+
+mixture
+{
+    transport
+    {
+        kappa   0.598;
+    }
+}
+
+// ************************************************************************* //

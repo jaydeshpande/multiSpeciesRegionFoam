@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/feed";
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Kinematic gauge pressure p/ρ  [m²/s²].
+// Inlet: zeroGradient (velocity Dirichlet; pressure floats).
+// Outlet: fixedValue 0 sets the reference gauge pressure.
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    feed_inlet
+    {
+        type        zeroGradient;
+    }
+
+    feed_outlet
+    {
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    feed_outer
+    {
+        type        zeroGradient;
+    }
+
+    feed_to_membrane
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

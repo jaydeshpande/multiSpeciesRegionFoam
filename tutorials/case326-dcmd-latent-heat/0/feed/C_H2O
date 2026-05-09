@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/feed";
+    object      C_H2O;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dummy C_H2O field in the liquid feed channel.  Vapour transport occurs
+// only in the membrane pores; this field carries no physical meaning.
+// All boundaries are zeroGradient so that C = 0 throughout the feed region.
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    feed_inlet
+    {
+        type        zeroGradient;
+    }
+
+    feed_outlet
+    {
+        type        zeroGradient;
+    }
+
+    feed_outer
+    {
+        type        zeroGradient;
+    }
+
+    feed_to_membrane
+    {
+        type        zeroGradient;   // one-sided; membrane side uses codedFixedValue
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / permeate
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/permeate";
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Kinematic gauge pressure p/ρ  [m²/s²].
+// Counter-flow: inlet at y = 66 mm.
+// Outlet (y = 0): fixedValue 0 as pressure reference.
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    permeate_inlet
+    {
+        type        zeroGradient;
+    }
+
+    permeate_outlet
+    {
+        type        fixedValue;
+        value       uniform 0;
+    }
+
+    permeate_outer
+    {
+        type        zeroGradient;
+    }
+
+    permeate_to_membrane
+    {
+        type        zeroGradient;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

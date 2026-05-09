@@ -1,0 +1,59 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case325-dcmd-cfd / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/feed";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hot salt water (2 g/L NaCl) — properties at 60°C (333 K).
+// Source: engineering correlations for dilute aqueous NaCl.
+//   ρ   = 983    kg/m³       (density at 60°C)
+//   Cv  = 4183   J/(kg·K)    (specific heat capacity)
+//   κ   = 0.654  W/(m·K)     (thermal conductivity at 60°C)
+//   α   = κ/(ρ·Cv) = 1.59×10⁻⁷ m²/s   (thermal diffusivity)
+//   Pr  = μ·Cv/κ ≈ 3.0 at 60°C
+//
+// NOTE: speciesSolid uses heSolidThermo (solidThermo base).  The velocity
+// field U is prescribed in the 0/ directory; speciesSolid adds thermal
+// advection (fvm::div(rhoPhi,e)) automatically when U is registered.
+
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIsoSolid;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       18;        // g/mol — water
+    }
+    transport
+    {
+        kappa           0.654;     // W/(m·K) at 60°C
+    }
+    thermodynamics
+    {
+        hf              0;
+        Cv              4183;      // J/(kg·K) at 60°C
+    }
+    equationOfState
+    {
+        rho             983;       // kg/m³ at 60°C
+    }
+}
+
+// ************************************************************************* //

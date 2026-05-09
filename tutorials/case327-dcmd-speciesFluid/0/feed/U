@@ -1,0 +1,57 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case327-dcmd-speciesFluid / feed
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/feed";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Plug-flow inlet at 0.215 m/s in +y (feed channel, co-flow side).
+// speciesFluid solves the PIMPLE velocity-pressure loop; the flow develops
+// from this initial uniform profile to the Poiseuille profile over time.
+//
+// Q_feed = 4.65 L/min total / 3 channels = 1.55 L/min per channel
+// A_cross = 24 × 5 = 120 mm²
+// U_mean  = (1.55e-3/60) / 120e-6 = 0.215 m/s
+// Re      = ρ·U·D_h/μ = 983×0.215×0.00828/4.66e-4 ≈ 3750
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0.215 0);
+
+boundaryField
+{
+    feed_inlet
+    {
+        type        fixedValue;
+        value       uniform (0 0.215 0);
+    }
+
+    feed_outlet
+    {
+        type        zeroGradient;
+    }
+
+    feed_outer
+    {
+        type        noSlip;
+    }
+
+    feed_to_membrane
+    {
+        type        noSlip;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

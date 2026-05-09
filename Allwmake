@@ -24,6 +24,9 @@ wmake libso src/speciesCoupling "$@"
 echo "==> Building libspeciesSolid (solver module)"
 wmake libso src/speciesSolid "$@"
 
+echo "==> Building libspeciesFluid (solver module)"
+wmake libso src/speciesFluid "$@"
+
 echo "==> Building libspeciesPost (post-processing)"
 wmake libso src/speciesPost "$@"
 
