@@ -114,7 +114,7 @@
     \texttt{multiSpeciesRegionFoam} library: governing equations, material
     constitutive laws, interface and surface boundary conditions, performance
     metrics, and numerical discretisation. Each section indicates which tutorial
-    cases (case311–case329) demonstrate the corresponding physics.
+    cases (case311–case330) demonstrate the corresponding physics.
   \end{tcolorbox}
 
   \vspace{30pt}
@@ -145,6 +145,12 @@ transport.  Two solver modules are provided:
         solved temperature field and species transport equation.  The full
         Navier--Stokes PIMPLE loop (U, p) is inherited; temperature and species
         are added in \texttt{thermophysicalPredictor()}.
+  \item \textbf{\texttt{compressibleSpeciesFluid}} — extends the OpenFOAM-13
+        \texttt{fluid} module (compressible PIMPLE with full internal-energy
+        equation) with species transport.  Required when density varies with
+        pressure, or when the standard OpenFOAM \texttt{heRhoThermo} property
+        infrastructure is preferred (e.g.\ for gases or using \texttt{rhoConst}
+        for liquids with thermophysical transport).
 \end{itemize}
 
 Inter-region coupling (heat and species) uses OpenFOAM's mapped-patch
@@ -206,8 +212,8 @@ and the equation reduces to pure diffusion.  The source term $S_\text{vol}$ is
 optional and uniform within each region.
 
 \begin{tcolorbox}[casebox]
-  \textbf{Demonstrated by:} all nineteen tutorial cases
-  (\caseref{case311}–\caseref{case329}).
+  \textbf{Demonstrated by:} all twenty tutorial cases
+  (\caseref{case311}–\caseref{case330}).
   Cases \caseref{case311}–\caseref{case312} use the thermal field $T$ as a
   species proxy to verify the pure-diffusion solver before species coupling is
   introduced.
@@ -257,7 +263,9 @@ assembling the species equation.
   \caseref{case311}–\caseref{case315}, \caseref{case317}–\caseref{case319},
   \caseref{case321}–\caseref{case322}, \caseref{case328}.\\
   \textbf{Active $T$ advection (\texttt{speciesFluid}):}
-  \caseref{case327}–\caseref{case329}.
+  \caseref{case327}–\caseref{case328}.\\
+  \textbf{Compressible energy eq.\ (\texttt{compressibleSpeciesFluid}):}
+  \caseref{case329}–\caseref{case330}.
 \end{tcolorbox}
 
 \subsection{Species and energy transport in fluid regions (\texttt{speciesFluid})}
@@ -357,12 +365,13 @@ mixture { transport { kappa  0.654; } }
 \end{verbatim}
 
 \begin{tcolorbox}[casebox]
-  \textbf{Demonstrated by:}
+  \textbf{Demonstrated by (\texttt{speciesFluid}):}
   \caseref{case327} (DCMD with solved laminar flow; feed and permeate use
   \texttt{speciesFluid}),
-  \caseref{case328} (Poiseuille + Graetz validation of the solver),
-  \caseref{case329} (FLiBe channel with distributed H$_2$ source and
-  SS316 permeation).
+  \caseref{case328} (Poiseuille + Graetz validation of the solver).\\
+  \textbf{See also:} \caseref{case329}–\caseref{case330} use
+  \texttt{compressibleSpeciesFluid} (§\ref{sec:compfluid}), which wraps the
+  same PIMPLE loop via the compressible \texttt{fluid} base class.
 \end{tcolorbox}
 
 \subsubsection{Dimensional considerations — Schmidt and Péclet numbers}
@@ -387,6 +396,142 @@ $\mathrm{Pe}$ the concentration boundary layer at a permeation wall is thin:
 This sets the mesh resolution requirement near permeation walls.
 Upwind (\texttt{Gauss upwind}) or linearUpwind schemes for
 $\nabla\cdot(\mathbf{U}\,C)$ prevent numerical oscillations at high Pe.
+
+\subsection{Species transport in compressible fluid regions (\texttt{compressibleSpeciesFluid})}
+\label{sec:compfluid}
+
+The \texttt{compressibleSpeciesFluid} solver extends the OpenFOAM-13
+\texttt{fluid} base module — which provides a compressible PIMPLE loop and
+full internal-energy equation — with single-species molar concentration
+transport.
+
+\subsubsection{Full equation set per PIMPLE outer corrector}
+
+\textbf{Step 1 — Continuity + momentum + pressure} (inherited from
+\texttt{isothermalFluid}/\texttt{fluid}):
+
+\begin{tcolorbox}[eqbox,title={Compressible continuity and momentum}]
+\begin{align}
+  \pder{\rho}{t} + \nabla\cdot(\rho\mathbf{U}) &= 0 \label{eq:cont_comp} \\[4pt]
+  \pder{(\rho\mathbf{U})}{t} + \nabla\cdot(\rho\mathbf{U}\mathbf{U})
+  &= -\nabla p + \nabla\cdot\boldsymbol{\tau} \label{eq:mom_comp}
+\end{align}
+\end{tcolorbox}
+
+\textbf{Step 2 — Internal energy} (inherited, solved for $e$):
+
+\begin{tcolorbox}[eqbox,title={Compressible energy equation (\texttt{fluid} base)}]
+\begin{equation}\label{eq:energy_comp}
+  \pder{(\rho e)}{t}
+  + \nabla\cdot(\varphi\, e)
+  + \nabla\cdot(\varphi\, K)
+  + \nabla\cdot\!\left(\varphi\,\frac{p}{\rho}\right)
+  + \nabla\cdot\mathbf{q}
+  = S_e
+\end{equation}
+\end{tcolorbox}
+
+Here $\varphi = \rho\mathbf{U}\cdot\mathbf{S}_f\,[\text{kg\,s}^{-1}]$ is the
+face mass flux, $K = \tfrac{1}{2}|\mathbf{U}|^2$ is specific kinetic energy,
+$\mathbf{q} = -\kappa\nabla T$ is the Fourier heat flux, and
+$e\,[\J\,\text{kg}^{-1}]$ is the sensible internal energy.  After solving,
+the temperature is recovered from the equation of state via
+$T = T_\text{ref} + e/C_v$ (for \texttt{eConst}) and density is updated.
+
+\textbf{Step 3 — Species concentration}:
+
+\begin{tcolorbox}[eqbox,title={Species equation — \texttt{compressibleSpeciesFluid}}]
+\begin{equation}\label{eq:comp_C}
+  \pder{C}{t}
+  + \nabla\cdot(\mathbf{U}_\text{vol}\,C)
+  = \nabla\cdot\!\bigl(D(T)\,\nabla C\bigr)
+  - \pder{C_t}{t}
+  + S_\text{vol}
+\end{equation}
+\end{tcolorbox}
+
+The volumetric flux $\mathbf{U}_\text{vol}$ is derived from the mass flux:
+\begin{equation}\label{eq:phiU}
+  \varphi_\text{vol} = \frac{\varphi}{\rho_f}
+  = \frac{\phi}{\texttt{fvc::interpolate(rho)}}
+  \quad [\text{m}^3\,\text{s}^{-1}]
+\end{equation}
+
+\begin{tcolorbox}[notebox]
+\textbf{Critical:} the mass flux $\varphi\,[\text{kg\,s}^{-1}]$ cannot be used
+directly in the species equation because $C$ is molar concentration
+$[\mol\,\m^{-3}]$, not mass concentration.  Using $\varphi$ would introduce a
+spurious factor of $\rho$ in the advection term.  The conversion
+$\varphi_\text{vol} = \varphi/\rho_f$ is mandatory.
+\end{tcolorbox}
+
+\subsubsection{Thermophysical property format (\texttt{heRhoThermo})}
+
+Unlike \texttt{speciesFluid}, which reads a flat \texttt{physicalProperties}
+dictionary, \texttt{compressibleSpeciesFluid} requires the full OpenFOAM
+\texttt{thermoType} hierarchy in \texttt{constant/<region>/physicalProperties}:
+
+\begin{verbatim}
+thermoType {
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          eConst;
+    equationOfState rhoConst;   % or perfectGas for true compressibility
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+mixture {
+    specie          { molWeight  <M [g/mol]>; }
+    equationOfState { rho  <rho [kg/m3]>; }    % for rhoConst
+    thermodynamics  { Cv  <Cv [J/kg/K]>;  Hf  0; }
+    transport       { mu  <mu [Pa.s]>;  Pr  <Pr>; }
+}
+\end{verbatim}
+
+A second dictionary \texttt{constant/<region>/thermophysicalTransport} is also
+required:
+\begin{verbatim}
+laminar { model Fourier; }
+\end{verbatim}
+
+\subsubsection{Required \texttt{fvSchemes} and \texttt{fvSolution}}
+
+\textbf{fvSchemes} — three additional \texttt{divSchemes} entries compared to
+\texttt{speciesFluid}:
+\begin{verbatim}
+divSchemes {
+    div(phi,e)          Gauss linearUpwind grad(e);
+    div(phi,K)          Gauss linear;
+    div(phi,(p|rho))    Gauss linear;
+    div(phiU,C_H2)      Gauss upwind;   % phiU = phi/rho_face
+}
+\end{verbatim}
+
+\textbf{fvSolution} — energy field is \texttt{e} (not \texttt{T}); density is
+updated explicitly via the EOS:
+\begin{verbatim}
+solvers {
+    "e.*"   { solver PBiCGStab; preconditioner DILU;
+              tolerance 1e-10; relTol 0; }
+    "C_.*"  { solver PBiCGStab; preconditioner DILU;
+              tolerance 1e-10; relTol 0; }
+    "rho.*" { solver diagonal; }      % covers rhoFinal on final corrector
+}
+\end{verbatim}
+
+Pressure uses thermodynamic dimensions $[\text{Pa}]$ (not kinematic
+$[\m^2\,\s^{-2}]$): \texttt{dimensions [1 -1 -2 0 0 0 0]}, with
+\texttt{fixedValue} at the outlet (e.g.\ 101325\,Pa for atmospheric reference).
+
+\begin{tcolorbox}[casebox]
+  \textbf{Demonstrated by:}
+  \caseref{case329} (FLiBe molten-salt channel at 873\,K with distributed
+  H$_2$ source and SS316 permeation; \texttt{rhoConst} EOS validates
+  equivalence to the incompressible \texttt{speciesFluid}),
+  \caseref{case330} (He gas channel at 700\,K, 1\,atm; same source, $D$,
+  and $K_s$ as \caseref{case329} for cross-solver flux comparison).
+\end{tcolorbox}
 
 \subsection{Species and energy coupling — multi-region}
 \label{sec:coupling}
@@ -440,7 +585,7 @@ isothermal tutorial cases.
 \begin{tcolorbox}[casebox]
   \textbf{Isothermal ($E_a = 0$):} \caseref{case311}–\caseref{case315},
   \caseref{case317}–\caseref{case319}, \caseref{case321}–\caseref{case322},
-  \caseref{case328}–\caseref{case329}.\\
+  \caseref{case328}–\caseref{case330}.\\
   \textbf{Arrhenius $D(T)$ active:} \caseref{case316} (vapour diffusion),
   \caseref{case319} (WC and SS316), \caseref{case320} (SS316 in HX),
   \caseref{case323}–\caseref{case327} (PTFE membrane and/or SS316 wall).
@@ -468,7 +613,8 @@ include iron, stainless steel (SS316), tungsten, vanadium alloys, and palladium~
 \begin{tcolorbox}[casebox]
   Used in: \caseref{case312}–\caseref{case314}, \caseref{case318}–\caseref{case320},
   \caseref{case321} (metal layer), \caseref{case322},
-  \caseref{case323} (FLiBe and SS316 walls), \caseref{case329} (FLiBe–SS316 interface).
+  \caseref{case323} (FLiBe and SS316 walls),
+  \caseref{case329}–\caseref{case330} (fluid–SS316 Sieverts interface).
 \end{tcolorbox}
 
 \subsubsection{Henry's law (polymers, liquids, porous media)}
@@ -1078,12 +1224,48 @@ The following criteria apply.
 
 \end{itemize}
 
+\subsection{Use \texttt{compressibleSpeciesFluid} for a fluid region when}
+
+\begin{itemize}[itemsep=4pt]
+
+  \item \textbf{Density varies significantly with temperature or pressure.}
+        Gases with large $\Delta T$ across the channel (e.g.\ helium at
+        700\,K, 1\,atm or FLiBe molten-salt at 873\,K) require a proper
+        compressible energy equation where pressure-work, kinetic-energy
+        flux, and variable density all couple to the velocity field.
+
+  \item \textbf{The equation of state is non-trivial.}
+        \texttt{compressibleSpeciesFluid} uses \texttt{heRhoThermo} with
+        user-specified EOS (\texttt{rhoConst}, \texttt{perfectGas}, etc.),
+        allowing the density--temperature--pressure coupling to be resolved
+        consistently.
+
+  \item \textbf{Sensible internal energy (rather than temperature) must be
+        the primary energy variable.}
+        The \texttt{fluid} base solves the full compressible energy equation
+        in terms of $e$~\eqref{eq:energy_comp}, including the
+        pressure-work term $\nabla\cdot(\varphi\,p/\rho)$.  The temperature
+        $T$ is then recovered via the EOS; this avoids operator-splitting
+        errors that arise when $T$ is used as the primary variable in a
+        compressible flow.
+
+  \item \textbf{Cross-solver validation against \texttt{speciesFluid} is
+        needed.}
+        When two different thermophysical frameworks (incompressible vs.\
+        compressible) should give the same species flux under equivalent
+        conditions, running both and comparing the permeation flux is a
+        strong verification tool (see \caseref{case329}--\caseref{case330}).
+
+\end{itemize}
+
 \begin{tcolorbox}[notebox]
   \textbf{Rule of thumb.}  For laminar channel flow at $\mathrm{Pe} \lesssim 100$,
   advection and diffusion compete on similar length scales and the velocity
-  profile matters.  Use \texttt{speciesFluid}.  For $\mathrm{Pe} \gg 100$ in
-  engineering contexts where only the bulk flux is needed, a turbulent-effective-$D$
-  in \texttt{speciesSolid} is usually sufficient and much cheaper.
+  profile matters.  Use \texttt{speciesFluid} (incompressible) or
+  \texttt{compressibleSpeciesFluid} (variable-density gas or liquid).  For
+  $\mathrm{Pe} \gg 100$ in engineering contexts where only the bulk flux is
+  needed, a turbulent-effective-$D$ in \texttt{speciesSolid} is usually
+  sufficient and much cheaper.
 \end{tcolorbox}
 
 % ============================================================
@@ -1168,6 +1350,7 @@ Library & Purpose & Key classes \\
 & & \texttt{latentHeatFlux} \\
 \texttt{libspeciesSolid.so} & Solver: solid / prescribed-flow & \texttt{speciesSolid} \\
 \texttt{libspeciesFluid.so} & Solver: incompressible fluid & \texttt{speciesFluid} \\
+\texttt{libcompressibleSpeciesFluid.so} & Solver: compressible fluid & \texttt{compressibleSpeciesFluid} \\
 \texttt{libspeciesPost.so} & Post-processing & \texttt{speciesFlux} \\
 \bottomrule
 \end{tabular}
@@ -1183,16 +1366,21 @@ Cases with one or more \texttt{speciesFluid} regions also add:
 \begin{verbatim}
 libs (...  "libspeciesFluid.so");
 \end{verbatim}
+Cases with one or more \texttt{compressibleSpeciesFluid} regions use instead:
+\begin{verbatim}
+libs (...  "libcompressibleSpeciesFluid.so");
+\end{verbatim}
 
 % ============================================================
 \section{Tutorial Guide}
 \label{sec:tutorials}
 % ============================================================
 
-Nineteen tutorial cases cover the full range from pure-diffusion verification
-to fully coupled fluid-flow species transport.  Cases 311--322 use
+Twenty tutorial cases cover the full range from pure-diffusion verification
+to fully coupled compressible fluid-flow species transport.  Cases 311--322 use
 \texttt{speciesSolid} exclusively; cases 323--326 extend \texttt{speciesSolid}
-with prescribed convection; cases 327--329 introduce \texttt{speciesFluid}.
+with prescribed convection; cases 327--328 introduce \texttt{speciesFluid};
+cases 329--330 use \texttt{compressibleSpeciesFluid}.
 
 Each case contains an \texttt{Allrun} script, an \texttt{Allclean} script,
 a per-case \texttt{README.md}, and (for verification cases) a Python
@@ -1303,12 +1491,19 @@ Case & Solver(s) & Physics / Key feature \\
   Three quantitative checks: Poiseuille profile (L$_2 < 2\,\%$),
   pressure gradient ($<5\,\%$), Graetz Nu$_\infty = 7.5407$ ($<5\,\%$). \\[2pt]
 
-\caseref{case329} & \texttt{speciesFluid} + \texttt{speciesSolid} &
-  FLiBe vertical channel with distributed H$_2$ source $\to$ SS316 permeation.
-  Uniform tritium-production source ($S_\text{vol}$); $\mathrm{Pe} = 1000$;
-  Sieverts linear interface; vacuum outer BC.
-  Demonstrates concentration accumulation and permeation in a molten-salt HX
-  channel relevant to fusion breeding blankets. \\
+\caseref{case329} & \texttt{compressibleSpeciesFluid} + \texttt{speciesSolid} &
+  FLiBe molten-salt channel (873\,K) with distributed H$_2$ source $\to$
+  SS316 permeation.  \texttt{heRhoThermo}/\texttt{rhoConst} EOS; compressible
+  PIMPLE; $\mathrm{Pe} = 1000$; Sieverts linear interface; vacuum outer BC.
+  Validates equivalence of compressible and incompressible formulations for
+  constant-density liquids. \\[2pt]
+
+\caseref{case330} & \texttt{compressibleSpeciesFluid} + \texttt{speciesSolid} &
+  He gas channel (700\,K, 1\,atm) with distributed H$_2$ source $\to$
+  SS316 permeation.  Identical $D$, $K_s$, source, and inlet velocity to
+  \caseref{case329}.  Cross-solver validation: confirms that the compressible
+  solver gives the same permeation flux as the rhoConst-liquid case across
+  a 10$\times$ change in density. \\
 
 \end{longtable}
 
@@ -1316,14 +1511,14 @@ Case & Solver(s) & Physics / Key feature \\
 
 \begin{table}[H]
 \centering
-\caption{Which tutorials exercise which physical models (all 19 cases).
+\caption{Which tutorials exercise which physical models (all 20 cases).
   $\checkmark$ = feature present; blank = not applicable.}
 \label{tab:cross}
 \scriptsize
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.3}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lrrrrrrrrrrrrrrrrrrr}
+\begin{tabular}{lrrrrrrrrrrrrrrrrrrrr}
 \toprule
 Physical model &
 \rotatebox{75}{\caseref{311}} & \rotatebox{75}{\caseref{312}} &
@@ -1335,59 +1530,62 @@ Physical model &
 \rotatebox{75}{\caseref{323}} & \rotatebox{75}{\caseref{324}} &
 \rotatebox{75}{\caseref{325}} & \rotatebox{75}{\caseref{326}} &
 \rotatebox{75}{\caseref{327}} & \rotatebox{75}{\caseref{328}} &
-\rotatebox{75}{\caseref{329}} \\
+\rotatebox{75}{\caseref{329}} & \rotatebox{75}{\caseref{330}} \\
 \midrule
 Species diffusion eq.~\eqref{eq:species}
   &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark
-  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
 Energy eq.~\eqref{eq:energy}
   &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark
-  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark&\checkmark \\
 Arrhenius $D(T)$~\eqref{eq:arrhenius}
   & & & & & &\checkmark& & &\checkmark&\checkmark& &
-  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark& & \\
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark& & & \\
 Sieverts law~\eqref{eq:sieverts}
   & & &\checkmark&\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark
-  &\checkmark& & & & & &\checkmark \\
+  &\checkmark& & & & & &\checkmark&\checkmark \\
 Henry law~\eqref{eq:henry}
   & & & & &\checkmark&\checkmark&\checkmark& & & &\checkmark&
-  & &\checkmark&\checkmark&\checkmark&\checkmark& & \\
+  & &\checkmark&\checkmark&\checkmark&\checkmark& & & \\
 McNabb--Foster~\eqref{eq:trap}
   & & &\checkmark& & & & & & & & &
-  & & & & & & & \\
+  & & & & & & & & \\
 Linear partition~\eqref{eq:linear_part}
   & & & &\checkmark& & & &\checkmark&\checkmark&\checkmark&\checkmark&
-  &\checkmark& & & & & &\checkmark \\
+  &\checkmark& & & & & &\checkmark&\checkmark \\
 Sqrt partition~\eqref{eq:sqrt_part}
   & & & & & & & & & & &\checkmark&
-  & & & & & & & \\
+  & & & & & & & & \\
 Quadratic partition~\eqref{eq:quad_part}
   & & & & & & &\checkmark& & & &\checkmark&
-  & & & & & & & \\
+  & & & & & & & & \\
 Surface recombination~\eqref{eq:recomb}
   & & & & & & & & & & & &\checkmark
-  & & & & & & & \\
+  & & & & & & & & \\
 PRF metric~\eqref{eq:prf}
   & & & & & & & & &\checkmark& & &
-  & & & & & & & \\
+  & & & & & & & & \\
 speciesFlux FO~\eqref{eq:J}
   & & & & & & & & & &\checkmark&\checkmark&\checkmark
-  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark& & \\
+  &\checkmark&\checkmark&\checkmark&\checkmark&\checkmark& & & \\
 Multi-region ($\geq 2$ regions)
   & & & & & & & & & &\checkmark& &
-  &\checkmark& &\checkmark&\checkmark&\checkmark& &\checkmark \\
+  &\checkmark& &\checkmark&\checkmark&\checkmark& &\checkmark&\checkmark \\
 Antoine equilibrium BC (§\ref{sec:antoine})
   & & & & & & & & & & & &
-  & &\checkmark&\checkmark&\checkmark&\checkmark& & \\
+  & &\checkmark&\checkmark&\checkmark&\checkmark& & & \\
 Latent heat flux BC (§\ref{sec:latent})
   & & & & & & & & & & & &
-  & & & &\checkmark&\checkmark& & \\
-Momentum eq.\ PIMPLE~\eqref{eq:mom}
+  & & & &\checkmark&\checkmark& & & \\
+Incompressible PIMPLE~\eqref{eq:mom}
   & & & & & & & & & & & &
-  & & & & &\checkmark&\checkmark&\checkmark \\
+  & & & & &\checkmark&\checkmark& & \\
+Compressible PIMPLE~\eqref{eq:mom_comp}
+  & & & & & & & & & & & &
+  & & & & & &\checkmark&\checkmark& \\
 Volumetric source $S_\text{vol}$~\eqref{eq:species}
   & & & & & & & & & & & &
-  & & & & & & &\checkmark \\
+  & & & & & & &\checkmark&\checkmark \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -1426,9 +1624,11 @@ Symbol & Meaning & SI units \\
 $C$               & Mobile species concentration       & $\mol\,\m^{-3}$ \\
 $C_t$             & Trapped concentration               & $\mol\,\m^{-3}$ \\
 $D(T)$            & Diffusivity (Arrhenius)              & $\m^2\,\s^{-1}$ \\
+$e$               & Sensible internal energy (\texttt{compressibleSpeciesFluid}) & $\J\,\kg^{-1}$ \\
 $E_a$             & Activation energy                   & $\J\,\mol^{-1}$ \\
 $f_t$             & Trap fraction                        & --- \\
 $J$               & Molar flux (area-averaged)           & $\mol\,\m^{-2}\,\s^{-1}$ \\
+$K = \tfrac{1}{2}|\mathbf{U}|^2$ & Specific kinetic energy (\texttt{compressibleSpeciesFluid}) & $\J\,\kg^{-1}$ \\
 $K_d(T)$          & Dissociation rate                   & $\mol\,\m^{-2}\,\s^{-1}\,\Pa^{-1}$ \\
 $K_H(T)$          & Henry solubility constant            & $\mol\,\m^{-3}\,\Pa^{-1}$ \\
 $K_r(T)$          & Recombination rate                  & $\m^4\,\mol^{-1}\,\s^{-1}$ \\
@@ -1436,10 +1636,11 @@ $K_s(T)$          & Sieverts solubility constant         & $\mol\,\m^{-3}\,\Pa^{
 $L$               & Layer thickness                      & $\m$ \\
 $N$               & Molar trap-site density              & $\mol\,\m^{-3}$ \\
 $n_t = f_t N$     & Available trap density               & $\mol\,\m^{-3}$ \\
-$p$               & Gas-phase partial pressure           & $\Pa$ \\
+$p$               & Pressure (thermodynamic in compressible, kinematic in incompressible) & $\Pa$ or $\m^2\,\s^{-2}$ \\
 $R$               & Gas constant ($8.314$)               & $\J\,\mol^{-1}\,\K^{-1}$ \\
 $S_\text{vol}$    & Volumetric species source            & $\mol\,\m^{-3}\,\s^{-1}$ \\
 $T$               & Temperature                          & $\K$ \\
+$\mathbf{U}$      & Fluid velocity                       & $\m\,\s^{-1}$ \\
 $w$               & Mixed-BC value fraction              & --- \\
 $X_0$             & Arrhenius pre-exponential factor     & (same as $X$) \\
 $\alpha_d(T)$     & Detrapping rate                     & $\s^{-1}$ \\
@@ -1447,6 +1648,9 @@ $\alpha_t$        & Trapping rate                       & $\s^{-1}$ \\
 $\delta^{-1}$     & Cell-centre to face distance (inv.) & $\m^{-1}$ \\
 $\varepsilon$     & Trap binding energy                  & eV \\
 $\kappa(T)$       & Thermal conductivity                 & $\W\,\m^{-1}\,\K^{-1}$ \\
+$\rho$            & Fluid density                        & $\kg\,\m^{-3}$ \\
+$\varphi$         & Face mass flux ($= \rho\mathbf{U}\cdot\mathbf{S}_f$, \texttt{phi} in OpenFOAM) & $\kg\,\s^{-1}$ \\
+$\varphi_\text{vol}$ & Face volumetric flux ($= \varphi/\rho_f$, \texttt{phiU}) & $\m^3\,\s^{-1}$ \\
 $\Phi = K_s^2 D$  & Permeability (diatomic gas)          & $\mol\,\m^{-1}\,\s^{-1}\,\Pa^{-1}$ \\
 $\Da$             & Damköhler number (surface kinetics) & --- \\
 $\mathrm{PRF}$    & Permeation reduction factor          & --- \\

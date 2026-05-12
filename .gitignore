@@ -35,3 +35,8 @@ cellToRegion
 __pycache__/
 *.pyc
 *.pyo
+
+# --- LaTeX ---
+*.out
+*.toc
+*.aux

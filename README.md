@@ -2,10 +2,11 @@
 
 An OpenFOAM-13 addon for multi-region species transport through solid membranes, fluid channels, and composite material systems. The library models advection-diffusion, Arrhenius temperature-dependent transport coefficients, McNabb–Foster trapping kinetics, and thermodynamically consistent interface partitioning (Sieverts / Henry law). Typical applications include tritium permeation in fission and fusion systems, dense-film membrane separation (reverse osmosis, membrane distillation), permeation barriers, and heat-exchanger conjugate transfer with dissolved species.
 
-Two solver modules extend the OpenFOAM-13 `foamMultiRun` framework:
+Three solver modules extend the OpenFOAM-13 `foamMultiRun` framework:
 
 - **`speciesSolid`** — adds species transport to solid regions (or fluid regions with prescribed flow). Inherits the `solid` base module for temperature via `solidThermo`. Suitable when the velocity field is known or negligibly influences the solution.
 - **`speciesFluid`** — adds species and temperature transport to fully solved incompressible fluid regions. Inherits the `incompressibleFluid` base module (PIMPLE U/p loop). Use when the velocity field must be computed from the Navier-Stokes equations.
+- **`compressibleSpeciesFluid`** — adds species transport to compressible fluid regions. Inherits the OpenFOAM-13 `fluid` base module (compressible PIMPLE + full internal-energy equation). Required for gases, or when the standard `heRhoThermo` property infrastructure is preferred (use `rhoConst` EOS for liquids).
 
 ---
 
@@ -33,7 +34,7 @@ When a velocity field U is registered on the mesh (e.g. prescribed flow in a cha
 | S_vol | Optional uniform volumetric source | mol m⁻³ s⁻¹ |
 | U | Velocity field (if prescribed) | m s⁻¹ |
 
-### Species, momentum, and energy transport — fluid regions (`speciesFluid`)
+### Species, momentum, and energy transport — incompressible fluid regions (`speciesFluid`)
 
 The `speciesFluid` module solves the coupled system of incompressible flow, scalar temperature, and species concentration. The full equation set solved in sequence within each PIMPLE outer corrector is:
 
@@ -72,6 +73,82 @@ The `speciesFluid` module solves the coupled system of incompressible flow, scal
 The PIMPLE loop first converges U and p (inherited from `incompressibleFluid`), then calls `thermophysicalPredictor()` which assembles and solves T followed by C. The updated T is used to refresh D(T) before solving the species equation.
 
 > **Numerical note:** The advection terms `fvm::div(phi, T)` and `fvm::div(phi, C)` create **asymmetric** coefficient matrices. The solver for these fields must be `PBiCGStab` with `DILU` preconditioner. Using `PCG` (symmetric-only) will abort with `Unknown asymmetric matrix solver PCG`. Also, the `"T.*"` wildcard in `fvSolution` is required because the PIMPLE final corrector creates a `TFinal` field.
+
+### Species transport in compressible fluid regions (`compressibleSpeciesFluid`)
+
+The `compressibleSpeciesFluid` module wraps the OpenFOAM-13 `fluid` base class and adds molar concentration transport. The key difference from `speciesFluid` is the **mass flux conversion**: the `fluid` base supplies `phi` [kg/s] (mass flux), but the species equation needs the volumetric flux [m³/s]:
+
+**Continuity (compressible):**
+```
+∂ρ/∂t  +  ∇·(ρU)  =  0
+```
+
+**Internal energy (solved for `e`, T recovered from EOS):**
+```
+∂(ρe)/∂t  +  ∇·(φe)  +  ∇·(φK)  +  ∇·(φ p/ρ)  =  ∇·(κ∇T)
+```
+
+**Species (advection-diffusion with volumetric flux):**
+```
+∂C/∂t  +  ∇·(U_vol C)  =  ∇·(D(T) ∇C)  −  ∂Ct/∂t  +  S_vol
+
+    where  U_vol = phiU = phi / fvc::interpolate(rho)   [m³/s]
+```
+
+| Symbol | Meaning | Units |
+|--------|---------|-------|
+| φ = ρU·Sf | Face mass flux | kg/s |
+| phiU = φ/ρ_face | Volumetric flux | m³/s |
+| e | Sensible internal energy | J/kg |
+| K = ½\|U\|² | Specific kinetic energy | J/kg |
+| p | Thermodynamic pressure | Pa |
+
+**Required `physicalProperties` format (`heRhoThermo`):**
+
+```
+thermoType
+{
+    type            heRhoThermo;  mixture  pureMixture;
+    transport       const;        thermo   eConst;
+    equationOfState rhoConst;     specie   specie;
+    energy          sensibleInternalEnergy;
+}
+mixture
+{
+    specie          { molWeight  <M>; }
+    equationOfState { rho  <rho>; }
+    thermodynamics  { Cv  <Cv>;   Hf  0; }
+    transport       { mu  <mu>;   Pr  <Pr>; }
+}
+```
+
+Also requires `constant/<region>/thermophysicalTransport`:
+```
+laminar { model Fourier; }
+```
+
+**Required `fvSchemes` additions:**
+```
+divSchemes
+{
+    div(phi,e)          Gauss linearUpwind grad(e);
+    div(phi,K)          Gauss linear;
+    div(phi,(p|rho))    Gauss linear;
+    div(phiU,C_<name>)  Gauss upwind;
+}
+```
+
+**Required `fvSolution` settings:**
+```
+solvers
+{
+    "e.*"   { solver PBiCGStab; preconditioner DILU; tolerance 1e-10; relTol 0; }
+    "C_.*"  { solver PBiCGStab; preconditioner DILU; tolerance 1e-10; relTol 0; }
+    "rho.*" { solver diagonal; }
+}
+```
+
+Pressure field uses thermodynamic dimensions `[1 -1 -2 0 0 0 0]` with a `fixedValue` outlet (e.g. 101325 Pa).
 
 ### Heat conduction — solid regions
 
@@ -205,13 +282,22 @@ Appropriate when:
 
 ### Use `speciesFluid` for fluid regions when
 
-The velocity and pressure fields must be **computed by solving the Navier-Stokes equations**. Required when:
+The velocity and pressure fields must be **computed by solving the Navier-Stokes equations** and the fluid is **incompressible**. Required when:
 
 - The velocity profile is unknown (developing flow, arbitrary geometry, pressure-driven flow with unknown parabolic/turbulent profile)
 - The interaction between concentration gradients and flow (e.g. concentration polarisation driven by a developing boundary layer) must be captured accurately
 - You need the momentum equation to provide a self-consistent pressure field (for multi-region cases where the fluid pressure is relevant)
 - Buoyancy or other body forces affect the flow
-- Examples: case327 (DCMD with solved laminar channel flow), case328 (Poiseuille + Graetz validation), case329 (FLiBe channel with H2 source and permeation)
+- Examples: case327 (DCMD with solved laminar channel flow), case328 (Poiseuille + Graetz validation)
+
+### Use `compressibleSpeciesFluid` for fluid regions when
+
+The fluid is a **gas** (density varies with pressure), or when the OpenFOAM `heRhoThermo` property infrastructure is preferred — including for liquids using `rhoConst` EOS. Required when:
+
+- The fluid is a gas at conditions where density variation matters
+- You want to use the standard OpenFOAM `heRhoThermo` thermoType hierarchy (e.g. `perfectGas`, `rhoConst`, `Boussinesq`)
+- The full internal-energy equation (with pressure-work term) should be solved rather than a scalar temperature equation
+- Examples: case329 (FLiBe channel; `rhoConst` validates equivalence to incompressible formulation), case330 (He gas at 700 K, 1 atm)
 
 **Required `physicalProperties` format for `speciesFluid`:**
 
@@ -242,27 +328,31 @@ The addon is split into five libraries and two solver modules, built in dependen
 
 ```
 src/
-├── speciesTransport/    →  libspeciesTransport.so
-│   ├── arrheniusProperty/   Temperature-dependent property X(T) = X₀·exp(-Ea/RT)
-│   ├── speciesModel/        Per-region owner of C, D(T), Ks, source, trapping
+├── speciesTransport/              →  libspeciesTransport.so
+│   ├── arrheniusProperty/             X(T) = X₀·exp(-Ea/RT)
+│   ├── speciesModel/                  Per-region owner of C, D(T), Ks, source, trapping
 │   └── trappingModel/
-│       ├── noTrapping           No-op (default)
-│       └── McNabbFoster         Single-trap model with semi-implicit ODE
+│       ├── noTrapping                 No-op (default)
+│       └── McNabbFoster               Single-trap model with semi-implicit ODE
 │
-├── speciesCoupling/     →  libspeciesCoupling.so
-│   ├── sievertsCoupledMixed/         Sieverts/Henry interface partition (3 modes)
-│   ├── surfaceRecombination/         Robin BC: D·∂C/∂n = Kd·p − Kr·C²
-│   ├── antoineEquilibriumFvPatch/    fixedValue from Antoine equation at membrane face
-│   └── latentHeatFluxFvPatch/        Mixed T BC adding q = J·Lvap·M
+├── speciesCoupling/               →  libspeciesCoupling.so
+│   ├── sievertsCoupledMixed/          Sieverts/Henry interface partition (3 modes)
+│   ├── surfaceRecombination/          Robin BC: D·∂C/∂n = Kd·p − Kr·C²
+│   ├── antoineEquilibriumFvPatch/     fixedValue from Antoine equation at membrane face
+│   └── latentHeatFluxFvPatch/         Mixed T BC adding q = J·Lvap·M
 │
-├── speciesSolid/        →  libspeciesSolid.so  (solver module)
-│   └── speciesSolid     Extends solid module: species + optional advection when U registered
+├── speciesSolid/                  →  libspeciesSolid.so  (solver module)
+│   └── speciesSolid                   Extends solid: species + optional advection when U registered
 │
-├── speciesFluid/        →  libspeciesFluid.so  (solver module)
-│   └── speciesFluid     Extends incompressibleFluid: full PIMPLE + T + C equations
+├── speciesFluid/                  →  libspeciesFluid.so  (solver module)
+│   └── speciesFluid                   Extends incompressibleFluid: PIMPLE + scalar T + C
 │
-└── speciesPost/         →  libspeciesPost.so  (post-processing)
-    └── speciesFlux      Function object: ∫ -D∇C·n̂ dA over user patches
+├── compressibleSpeciesFluid/      →  libcompressibleSpeciesFluid.so  (solver module)
+│   └── compressibleSpeciesFluid       Extends fluid: compressible PIMPLE + energy e + C
+│                                      phiU = phi/rho_face  (mass→volumetric flux conversion)
+│
+└── speciesPost/                   →  libspeciesPost.so  (post-processing)
+    └── speciesFlux                    Function object: ∫ -D∇C·n̂ dA over user patches
 ```
 
 **Library loading in `controlDict`:**
@@ -273,6 +363,7 @@ libs  ("libspeciesTransport.so"  "libspeciesCoupling.so"
 ```
 
 Add `"libspeciesFluid.so"` when any region uses `speciesFluid`.
+Add `"libcompressibleSpeciesFluid.so"` when any region uses `compressibleSpeciesFluid`.
 
 ---
 
@@ -297,7 +388,7 @@ cd $WM_PROJECT_USER_DIR/multiSpeciesRegionFoam
 ./Allwmake -j4 2>&1 | tee build.log
 ```
 
-Build order in `Allwmake`: `speciesTransport` → `speciesCoupling` → `speciesSolid` → `speciesFluid` → `speciesPost`. Compilation takes under two minutes. All `.so` objects are installed into `$FOAM_USER_LIBBIN`.
+Build order in `Allwmake`: `speciesTransport` → `speciesCoupling` → `speciesSolid` → `speciesFluid` → `compressibleSpeciesFluid` → `speciesPost`. Compilation takes under two minutes. All `.so` objects are installed into `$FOAM_USER_LIBBIN`.
 
 **Clean:**
 
@@ -331,7 +422,8 @@ All tutorials are self-contained cases in `tutorials/`. Each contains `Allrun`, 
 | [case326-dcmd-latent-heat](tutorials/case326-dcmd-latent-heat/README.md) | DCMD with latent heat coupling | `latentHeatFlux` BC adds q=J·Lvap·M to T balance at membrane face | `speciesSolid` |
 | [case327-dcmd-speciesFluid](tutorials/case327-dcmd-speciesFluid/README.md) | DCMD with fully solved incompressible flow | Feed/permeate use `speciesFluid` (PIMPLE U/p + T + C); membrane uses `speciesSolid` | `speciesFluid` + `speciesSolid` |
 | [case328-poiseuille-graetz](tutorials/case328-poiseuille-graetz/README.md) | `speciesFluid` solver validation | Poiseuille profile (L2 < 2%) + Graetz Nu∞ = 7.5407 (< 5% error) | `speciesFluid` |
-| [case329-flibe-channel](tutorials/case329-flibe-channel/README.md) | FLiBe channel with H₂ source → SS316 permeation | Uniform tritium source; Pe=1000; Sieverts interface; vacuum outer BC | `speciesFluid` + `speciesSolid` |
+| [case329-flibe-channel](tutorials/case329-flibe-channel/README.md) | FLiBe (873 K) channel with H₂ source → SS316 permeation | heRhoThermo/rhoConst; compressible PIMPLE; Pe=1000; Sieverts interface; validates compressible = incompressible for constant-ρ | `compressibleSpeciesFluid` + `speciesSolid` |
+| [case330-compressible-He-channel](tutorials/case330-compressible-He-channel/README.md) | He gas (700 K, 1 atm) channel with H₂ source → SS316 permeation | Same D, Ks, source, U as case329; cross-solver flux comparison verifies compressible solver | `compressibleSpeciesFluid` + `speciesSolid` |
 
 ---
 
