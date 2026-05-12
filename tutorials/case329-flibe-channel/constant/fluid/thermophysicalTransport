@@ -1,0 +1,25 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      thermophysicalTransport;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Laminar Fourier heat conduction: q = -kappa * grad(T).
+// kappa is derived from thermo properties: kappa = mu * Cp / Pr.
+// For FLiBe: kappa = 5.63e-3 * 2386 / 12.22 = 1.10 W/(m·K).
+// Required by the fluid base class (compressibleSpeciesFluid inherits fluid).
+
+laminar
+{
+    model           Fourier;
+}
+
+// ************************************************************************* //

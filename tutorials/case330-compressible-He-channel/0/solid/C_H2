@@ -1,0 +1,70 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case330-compressible-He-channel / solid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/solid";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in SS316.
+// Initial condition: zero (un-loaded barrier at t=0).
+// Driven by Sieverts-law coupling at x=5 mm (fluid_to_solid interface).
+// Vacuum BC at x=7 mm outer surface: C=0 (all permeated H2 is removed).
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    solid_bottom
+    {
+        type        zeroGradient;
+    }
+
+    solid_top
+    {
+        type        zeroGradient;
+    }
+
+    solid_outer
+    {
+        type        fixedValue;
+        value       uniform 0;      // outer surface: perfect vacuum / sweep gas
+    }
+
+    solid_to_fluid
+    {
+        // Sieverts-law (linear) partition: Ks_solid = Ks_fluid = 1000
+        // → concentration continuous across the SS316–He interface.
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

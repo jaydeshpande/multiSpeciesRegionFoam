@@ -1,0 +1,74 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case330-compressible-He-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      C_H2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen in He gas.
+// Initial condition: zero (fresh, hydrogen-free He entering the channel).
+// Hydrogen accumulates via the uniform volumetric source S = 1e-5 mol/(m³·s),
+// is transported upward by flow and laterally by diffusion, and permeates
+// into the SS316 solid at x = 5 mm.
+//
+// Steady-state estimate (no permeation, plug flow):
+//   C_out ≈ S·L/U = 1e-5·0.05/0.01 = 5e-5 mol/m³
+
+dimensions      [0 -3 0 0 1 0 0];   // mol/m³
+
+internalField   uniform 0;
+
+boundaryField
+{
+    fluid_bottom
+    {
+        type        fixedValue;
+        value       uniform 0;      // fresh hydrogen-free He enters at C=0
+    }
+
+    fluid_top
+    {
+        type        zeroGradient;   // outflow
+    }
+
+    fluid_centerline
+    {
+        type        zeroGradient;   // symmetry: zero normal flux
+    }
+
+    fluid_to_solid
+    {
+        // Sieverts-law (linear) partition: Ks_fluid = Ks_solid = 1000
+        // → no concentration jump at the He–SS316 interface.
+        type        sievertsCoupledMixed;
+        nbrField    C_H2;
+        T           T;
+        Tnbr        T;
+        partition   linear;
+        Ks
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;
+            Ea      0;
+        }
+        KsNbr
+        {
+            X0      [0 -3 0 0 1 0 0] 1000;
+            Ea      0;
+        }
+        value       uniform 0;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

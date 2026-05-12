@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case330-compressible-He-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0/fluid";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// He velocity: upward plug flow at inlet, develops to half-Poiseuille
+// profile (symmetry at x=0, no-slip at x=5 mm interface).
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0.01 0);
+
+boundaryField
+{
+    fluid_bottom
+    {
+        type        fixedValue;
+        value       uniform (0 0.01 0);   // 0.01 m/s upward inlet
+    }
+
+    fluid_top
+    {
+        type        zeroGradient;
+    }
+
+    fluid_centerline
+    {
+        type        slip;                  // symmetry: ∂U_y/∂x = 0, U_x = 0
+    }
+
+    fluid_to_solid
+    {
+        type        noSlip;                // fluid-solid interface is a no-slip wall
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

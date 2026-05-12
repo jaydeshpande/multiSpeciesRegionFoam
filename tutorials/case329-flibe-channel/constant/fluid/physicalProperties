@@ -15,22 +15,44 @@ FoamFile
 // FLiBe (66.7% LiF + 33.3% BeF2) at 873 K (600°C).
 // Source: Romatoski & Hu, Nucl. Technol. 205 (2019).
 //   ρ = 1940 kg/m³,  μ = 5.63e-3 Pa·s  → ν = 2.9e-6 m²/s
-//   Cp = 2386 J/(kg·K),  k = 1.1 W/(m·K)
+//   Cp = 2386 J/(kg·K),  k = 1.1 W/(m·K),  Pr = μ·Cp/k = 12.22
+//   Molar mass FLiBe ≈ 32.95 g/mol
 //
-// Newtonian viscosityModel entries are read by the incompressibleFluid base
-// class.  rho, Cp, and mixture.transport.kappa are read by speciesFluid.
+// heRhoThermo format required by compressibleSpeciesFluid (fluid base class).
+// rhoConst EOS → incompressible limit (density fixed at 1940 kg/m³).
+// For a liquid at low pressure, this is physically appropriate and gives
+// identical results to the speciesFluid (incompressible) formulation.
 
-viscosityModel  Newtonian;
-nu              [0 2 -1 0 0 0 0] 2.9e-6;
-
-rho             1940;
-Cp              2386;
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          eConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
 
 mixture
 {
+    specie
+    {
+        molWeight   32.95;          // [g/mol]  FLiBe average molar mass
+    }
+    equationOfState
+    {
+        rho         1940;           // [kg/m³]  constant density
+    }
+    thermodynamics
+    {
+        Cv          2386;           // [J/(kg·K)]  Cv ≈ Cp for rhoConst liquid
+        Hf          0;
+    }
     transport
     {
-        kappa   1.1;
+        mu          5.63e-3;        // [Pa·s]
+        Pr          12.22;          // μ·Cp/k = 5.63e-3·2386/1.1
     }
 }
 

@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
   =========                 |
   \\      /  F ield         | multiSpeciesRegionFoam
-   \\    /   O peration     | Case:     case329-flibe-channel
+   \\    /   O peration     | Case:     case330-compressible-He-channel
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -11,14 +11,18 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// FLiBe vertical channel with distributed H2 source → SS316 permeation.
+// He gas vertical channel with distributed H2 source → SS316 permeation.
 //
 // Two-region case:
-//   fluid  — FLiBe molten salt (compressibleSpeciesFluid: PIMPLE U/p/e + C_H2)
+//   fluid  — He gas at 700 K, 1 atm (compressibleSpeciesFluid: PIMPLE U/p + e + C_H2)
 //   solid  — SS316 stainless steel (speciesSolid: diffusion only)
 //
-// Hydrogen produced uniformly in FLiBe at rate S = 1e-5 mol/(m³·s).
-// Advected upward by flow (U_in = 0.01 m/s) and diffused toward the wall.
+// Purpose: validate that compressibleSpeciesFluid gives the same permeation
+// flux as the incompressible speciesFluid (case329-flibe-channel) when the
+// same D, Ks, source, and velocity are used.
+//
+// Hydrogen produced uniformly at rate S = 1e-5 mol/(m³·s).
+// Advected upward by plug flow (U_in = 0.01 m/s) and diffused toward the wall.
 // Permeates through SS316 via Sieverts-law interface; exits at outer surface
 // (C = 0, vacuum BC).
 

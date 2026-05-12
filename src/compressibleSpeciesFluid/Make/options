@@ -1,0 +1,34 @@
+EXE_INC = \
+    -I$(WM_PROJECT_DIR)/applications/modules/fluidSolver \
+    -I$(WM_PROJECT_DIR)/applications/modules/isothermalFluid \
+    -I$(WM_PROJECT_DIR)/applications/modules/fluid \
+    -I../speciesTransport/arrheniusProperty \
+    -I../speciesTransport/trappingModel/trappingModel \
+    -I../speciesTransport/trappingModel/noTrapping \
+    -I../speciesTransport/trappingModel/McNabbFoster \
+    -I../speciesTransport/speciesModel \
+    -I$(LIB_SRC)/physicalProperties/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/MomentumTransportModels/momentumTransportModels/lnInclude \
+    -I$(LIB_SRC)/MomentumTransportModels/compressible/lnInclude \
+    -I$(LIB_SRC)/ThermophysicalTransportModels/thermophysicalTransportModel/lnInclude \
+    -I$(LIB_SRC)/ThermophysicalTransportModels/fluid/lnInclude \
+    -I$(LIB_SRC)/ThermophysicalTransportModels/fluidThermo/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude
+
+LIB_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
+    -lfluid \
+    -lisothermalFluid \
+    -lfluidSolver \
+    -lfluidThermophysicalModels \
+    -lcompressibleMomentumTransportModels \
+    -lcoupledThermophysicalTransportModels \
+    -lspeciesTransport \
+    -lfiniteVolume \
+    -lmeshTools \
+    -lsampling \
+    -lfvModels \
+    -lfvConstraints

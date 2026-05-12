@@ -27,6 +27,9 @@ wmake libso src/speciesSolid "$@"
 echo "==> Building libspeciesFluid (solver module)"
 wmake libso src/speciesFluid "$@"
 
+echo "==> Building libcompressibleSpeciesFluid (solver module)"
+wmake libso src/compressibleSpeciesFluid "$@"
+
 echo "==> Building libspeciesPost (post-processing)"
 wmake libso src/speciesPost "$@"
 

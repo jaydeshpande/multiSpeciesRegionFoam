@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case330-compressible-He-channel / solid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/solid";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// SS316 at uniform 700 K.  No thermal sources or coupling effects in this
+// isothermal case, so T remains constant throughout.
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 700;
+
+boundaryField
+{
+    solid_bottom
+    {
+        type        zeroGradient;
+    }
+
+    solid_top
+    {
+        type        zeroGradient;
+    }
+
+    solid_outer
+    {
+        type        fixedValue;
+        value       uniform 700;
+    }
+
+    solid_to_fluid
+    {
+        type        fixedValue;
+        value       uniform 700;
+    }
+
+    sides
+    {
+        type        empty;
+    }
+}
+
+// ************************************************************************* //

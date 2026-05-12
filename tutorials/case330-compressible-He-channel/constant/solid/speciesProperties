@@ -1,0 +1,42 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case330-compressible-He-channel / solid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Hydrogen transport in SS316 at 700 K.
+//
+// D = 5e-8 m²/s: same as fluid (accelerated for tutorial, same as case329).
+// Ks matches He-fluid value → linear (no-jump) interface partition.
+// Identical to case329-flibe-channel/constant/solid/speciesProperties.
+
+species     C_H2;
+
+D
+{
+    X0      [0 2 -1 0 0 0 0] 5e-8;   // m²/s  (Ea=0: constant)
+    Ea      0;
+}
+
+Ks
+{
+    X0      [0 -3 0 0 1 0 0] 1000;   // mol/m³
+    Ea      0;
+}
+
+source      0;
+
+trappingModel
+{
+    type    noTrapping;
+}
+
+// ************************************************************************* //

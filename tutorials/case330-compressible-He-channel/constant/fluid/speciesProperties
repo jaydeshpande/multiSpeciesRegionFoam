@@ -1,0 +1,48 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | multiSpeciesRegionFoam
+   \\    /   O peration     | Case:     case330-compressible-He-channel / fluid
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      speciesProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Dissolved hydrogen transport in He gas at 700 K.
+//
+// D = 5e-8 m²/s: same value as case329-flibe-channel (FLiBe) to allow
+// direct comparison of compressibleSpeciesFluid vs speciesFluid results.
+// The identical D, Ks, source and velocity ensure the permeation flux
+// should agree within numerical error between the two cases.
+//
+// Hydrogen source: S = 1e-5 mol/(m³·s), uniform throughout the He volume.
+//
+// Ks set equal to solid value (1000 mol/m³/Pa^0.5) so there is no
+// concentration discontinuity at the He–SS316 interface (Ks_ratio = 1).
+
+species     C_H2;
+
+D
+{
+    X0      [0 2 -1 0 0 0 0] 5e-8;   // m²/s  (Ea=0: constant at 700 K)
+    Ea      0;
+}
+
+Ks
+{
+    X0      [0 -3 0 0 1 0 0] 1000;   // mol/m³  (pseudo-Sieverts for linear partition)
+    Ea      0;
+}
+
+source      1e-5;   // mol/(m³·s)  uniform volumetric hydrogen production
+
+trappingModel
+{
+    type    noTrapping;
+}
+
+// ************************************************************************* //

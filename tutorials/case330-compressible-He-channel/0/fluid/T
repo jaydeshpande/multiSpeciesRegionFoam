@@ -1,37 +1,35 @@
 /*--------------------------------*- C++ -*----------------------------------*\
   =========                 |
   \\      /  F ield         | multiSpeciesRegionFoam
-   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+   \\    /   O peration     | Case:     case330-compressible-He-channel / fluid
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
     format      ascii;
     class       volScalarField;
     location    "0/fluid";
-    object      p;
+    object      T;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// Thermodynamic pressure [Pa].
-// compressibleSpeciesFluid uses isothermalFluid as base which stores
-// absolute (thermodynamic) pressure, not kinematic pressure.
-// Reference: atmospheric (101325 Pa) with fixedValue at the outlet.
+// Isothermal He at 700 K.  No heat sources, so T ≈ const.
+// D(T) uses Ea=0 → D is constant regardless of T variations.
 
-dimensions      [1 -1 -2 0 0 0 0];
+dimensions      [0 0 0 1 0 0 0];
 
-internalField   uniform 101325;
+internalField   uniform 700;
 
 boundaryField
 {
     fluid_bottom
     {
-        type        zeroGradient;   // pressure develops naturally at inlet
+        type        fixedValue;
+        value       uniform 700;
     }
 
     fluid_top
     {
-        type        fixedValue;
-        value       uniform 101325;   // atmospheric reference at outlet
+        type        zeroGradient;
     }
 
     fluid_centerline

@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
   =========                 |
   \\      /  F ield         | multiSpeciesRegionFoam
-   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+   \\    /   O peration     | Case:     case330-compressible-He-channel / solid
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -11,8 +11,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// FLiBe channel: Re ≈ 34 (laminar).  Species Peclet Pe ≈ 1000 → upwind for C.
-// Compressible base (fluid): energy field is internal energy e, not T directly.
+// SS316 slab: pure diffusion (no flow).
 
 ddtSchemes
 {
@@ -22,18 +21,11 @@ ddtSchemes
 gradSchemes
 {
     default         Gauss linear;
-    grad(U)         Gauss linear;
-    grad(e)         Gauss linear;
 }
 
 divSchemes
 {
     default         none;
-    div(phi,U)          Gauss linearUpwind grad(U);
-    div(phi,e)          Gauss linearUpwind grad(e);
-    div(phi,K)          Gauss linear;
-    div(phi,(p|rho))    Gauss linear;
-    div(phiU,C_H2)      Gauss upwind;
 }
 
 laplacianSchemes

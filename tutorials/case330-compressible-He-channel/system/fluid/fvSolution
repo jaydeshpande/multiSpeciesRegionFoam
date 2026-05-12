@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
   =========                 |
   \\      /  F ield         | multiSpeciesRegionFoam
-   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+   \\    /   O peration     | Case:     case330-compressible-He-channel / fluid
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -41,8 +41,7 @@ solvers
         relTol          0;
     }
 
-    // Internal energy e: asymmetric due to advection → PBiCGStab required.
-    // The PIMPLE final corrector creates eFinal, so the wildcard "e.*" is needed.
+    // e and C have advection terms → asymmetric matrix → PBiCGStab required.
     "e.*"
     {
         solver          PBiCGStab;

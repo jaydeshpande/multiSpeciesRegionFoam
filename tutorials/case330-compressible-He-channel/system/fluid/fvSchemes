@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
   =========                 |
   \\      /  F ield         | multiSpeciesRegionFoam
-   \\    /   O peration     | Case:     case329-flibe-channel / fluid
+   \\    /   O peration     | Case:     case330-compressible-He-channel / fluid
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -11,8 +11,8 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// FLiBe channel: Re ≈ 34 (laminar).  Species Peclet Pe ≈ 1000 → upwind for C.
-// Compressible base (fluid): energy field is internal energy e, not T directly.
+// He channel: Re ≈ 0.24 (laminar).  Species Peclet Pe ≈ 1000 → upwind for C.
+// compressibleSpeciesFluid solves sensible internal energy (e) instead of T.
 
 ddtSchemes
 {
