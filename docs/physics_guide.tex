@@ -1389,8 +1389,16 @@ to an analytical or benchmark solution (exit code 0 on pass, 1 on fail).
 
 \subsection{Case summary table}
 
-\small
-\begin{longtable}{llp{9.5cm}}
+% Column widths chosen so total = \linewidth:
+%   case col  1.8cm  (fits "case330" in bold colour)
+%   solver col 5.0cm  (wraps "compressibleSpeciesFluid + speciesSolid")
+%   physics col = remainder (auto-computed via \dimexpr)
+%   plus 4\tabcolsep inter-column gaps = 4×6pt = 24pt ≈ 0.84cm
+\small\setlength{\LTcapwidth}{\linewidth}
+\begin{longtable}{%
+  >{\raggedright\arraybackslash}p{1.8cm}
+  >{\raggedright\arraybackslash}p{5.0cm}
+  p{\dimexpr\linewidth-1.8cm-5.0cm-4\tabcolsep\relax}}
 \caption{Tutorial cases and the physics they demonstrate.}
 \label{tab:cases}\\
 \toprule
@@ -1582,7 +1590,7 @@ Incompressible PIMPLE~\eqref{eq:mom}
   & & & & &\checkmark&\checkmark& & \\
 Compressible PIMPLE~\eqref{eq:mom_comp}
   & & & & & & & & & & & &
-  & & & & & &\checkmark&\checkmark& \\
+  & & & & & & &\checkmark&\checkmark \\
 Volumetric source $S_\text{vol}$~\eqref{eq:species}
   & & & & & & & & & & & &
   & & & & & & &\checkmark&\checkmark \\
